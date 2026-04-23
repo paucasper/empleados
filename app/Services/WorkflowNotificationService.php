@@ -35,13 +35,29 @@ class WorkflowNotificationService
         $absence->loadMissing(['user', 'signer']);
         $recipient = $absence->signer?->email;
 
-        if (!$recipient) return;
+        \Log::info('ENVIO CORREO FIRMANTE AUSENCIA', [
+            'absence_id' => $absence->id,
+            'signer_id' => $absence->signer?->id,
+            'signer_name' => $absence->signer?->name,
+            'signer_email' => $recipient,
+        ]);
+
+        if (!$recipient) {
+            return;
+        }
 
         Mail::to($recipient)->send(new WorkflowNotificationMail(
             'Nueva solicitud de ausencia pendiente de firma',
             'Tienes una solicitud de ausencia para revisar',
-            'Se ha registrado una nueva solicitud de ausencia que requiere tu firma para ser exportada a SAP.',
-            $this->getAbsenceDetails($absence)
+            'Se ha registrado una nueva solicitud de ausencia que requiere tu firma.',
+            [
+                'Solicitante'  => $absence->user?->name ?? '-',
+                'Firmante'     => $absence->signer?->name ?? '-',
+                'Tipo/AWART'   => $absence->awart ?: '-',
+                'Fecha Inicio' => $absence->begda instanceof \DateTime ? $absence->begda->format('d/m/Y') : $absence->begda,
+                'Fecha Fin'    => $absence->endda instanceof \DateTime ? $absence->endda->format('d/m/Y') : $absence->endda,
+                'Estado'       => 'Pendiente de firma del responsable',
+            ]
         ));
     }
 
@@ -102,7 +118,7 @@ class WorkflowNotificationService
             [
                 'Solicitante' => $expense->user?->name ?? '-',
                 'Título' => $expense->title ?: $expense->description ?: '-',
-                'Estado' => $expense->status?->name ?? '-',
+                'Estado' => 'Pendiente de firma del responsable',
             ]
         ));
     }
@@ -120,7 +136,7 @@ class WorkflowNotificationService
             'La solicitud ha sido aprobada y exportada correctamente a SAP.',
             [
                 'Solicitante' => $expense->user?->name ?? '-',
-                'Estado' => 'Aprobado y Exportado',
+                'Estado' => 'Aprobado y Exportado a SAP',
             ]
         ));
     }

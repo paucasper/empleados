@@ -52,12 +52,27 @@ public function store(Request $request)
             'employee_signed_at' => now(), 
         ]);
 
+        $service = app(WorkflowNotificationService::class);
+        $absence = $absenceRequest->fresh()->load(['user', 'signer']);
+
         try {
-            $service = app(WorkflowNotificationService::class);
-            $service->sendAbsenceCreatedToEmployee($absenceRequest->fresh());
-            $service->sendAbsenceCreatedToSigner($absenceRequest->fresh());
-        } catch (\Exception $e) {
-            \Log::error("Error avisos: " . $e->getMessage());
+            $service->sendAbsenceCreatedToEmployee($absence);
+        } catch (\Throwable $e) {
+            \Log::error('Error correo ausencia al solicitante', [
+                'absence_request_id' => $absenceRequest->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        usleep(1200000); // 1.2 segundos
+
+        try {
+            $service->sendAbsenceCreatedToSigner($absence);
+        } catch (\Throwable $e) {
+            \Log::error('Error correo ausencia al firmante', [
+                'absence_request_id' => $absenceRequest->id,
+                'error' => $e->getMessage(),
+            ]);
         }
 
         return response()->json(['success' => true, 'data' => $absenceRequest], 201);
@@ -141,7 +156,7 @@ public function store(Request $request)
         $user = auth()->user();
 
         abort_unless($absenceRequest->signer_user_id === $user->id, 403, 'No eres el firmante asignado.');
-        abort_unless($absenceRequest->status === 'pending_signer_signature', 409, 'La solicitud no está pendiente de firma del firmante.');
+        abort_unless($absenceRequest->status === 'pending_signer_signature', 409, 'Pendiente de aprobación del firmante.');
 
         $absenceRequest->update([
             'status' => 'rejected',
