@@ -5,6 +5,7 @@ use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AbsenceRequestController;
 use App\Http\Controllers\Api\ExpenseController;
+use App\Http\Controllers\VacationController;
 
 Route::get('/', fn () => redirect()->route('login'));
 
@@ -16,11 +17,13 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::get('/vacations', function () {
-        return view('vacations', [
+    Route::get('/vacations', [VacationController::class, 'index'])->name('vacations');
+
+    Route::get('/calendar', function () {
+        return view('calendar', [
             'pernr' => auth()->user()->sap_employee_id,
         ]);
-    })->name('vacations');
+    })->name('calendar');
 
     Route::get('/expenses', [ExpenseController::class, 'index'])->name('expenses');
 
@@ -57,6 +60,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/expenses/{id}/approve-admin', [ExpenseController::class, 'approveByAdmin']);
     Route::post('/expenses/{id}/reject-admin', [ExpenseController::class, 'rejectByAdmin']);
     Route::get('/expenses/mine', [ExpenseController::class, 'myRequests']);
+
+
+    
     
 });
 

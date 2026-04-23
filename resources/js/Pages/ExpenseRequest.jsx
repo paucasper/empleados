@@ -684,10 +684,6 @@ export default function ExpenseRequest({ pernr }) {
                 >
                     Firmar y enviar
                 </button>
-
-                <button type="button" className="secondary">
-                    Volver
-                </button>
             </div>
 
             {message && (

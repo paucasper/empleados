@@ -33,17 +33,50 @@ class DashboardController extends Controller
             'active_expenses'   => $activeExpenses,
         ];
 
-        // Mis tramitaciones recientes — ausencias
+        /*
+        |--------------------------------------------------------------------------
+        | Mis tramitaciones (activas)
+        |--------------------------------------------------------------------------
+        | Aquí NO deben salir las exportadas a SAP ni las rechazadas.
+        */
+
         $myAbsences = AbsenceRequest::with(['signer'])
             ->where('user_id', $user->id)
+            ->whereNotIn('status', ['exported_to_sap', 'rejected'])
             ->latest()
             ->take(5)
             ->get();
 
-        // Mis tramitaciones recientes — gastos
         $myExpenses = HrRequest::with(['status', 'approver', 'admin'])
             ->where('user_id', $user->id)
             ->where('type', HrRequest::TYPE_EXPENSE)
+            ->whereHas('status', function ($q) {
+                $q->whereNotIn('code', ['exported_to_sap', 'rejected']);
+            })
+            ->latest()
+            ->take(5)
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Mis trámites (finalizados / histórico)
+        |--------------------------------------------------------------------------
+        | Aquí sí deben salir exportados a SAP y rechazados.
+        */
+
+        $completedAbsences = AbsenceRequest::with(['signer'])
+            ->where('user_id', $user->id)
+            ->whereIn('status', ['exported_to_sap', 'rejected'])
+            ->latest()
+            ->take(5)
+            ->get();
+
+        $completedExpenses = HrRequest::with(['status', 'approver', 'admin'])
+            ->where('user_id', $user->id)
+            ->where('type', HrRequest::TYPE_EXPENSE)
+            ->whereHas('status', function ($q) {
+                $q->whereIn('code', ['exported_to_sap', 'rejected']);
+            })
             ->latest()
             ->take(5)
             ->get();
@@ -71,63 +104,51 @@ class DashboardController extends Controller
             ->get();
 
         // Últimas solicitudes para la tabla "Actividad"
-        $recentAbsences = AbsenceRequest::where('user_id', $user->id)
-            ->latest()
-            ->take(5)
-            ->get()
-            ->map(function ($absence) {
-                return [
-                    'title'  => $absence->description ?: $absence->awart,
-                    'type'   => 'Ausencia',
-                    'status' => $this->mapAbsenceStatus($absence->status),
-                    'date'   => $absence->created_at->format('d/m/Y'),
-                    'sort'   => $absence->created_at,
-                ];
-            });
+        $recentAbsences = $myAbsences->map(function ($absence) {
+            return [
+                'title'  => $absence->description ?: $absence->awart,
+                'type'   => 'Ausencia',
+                'status' => $this->mapAbsenceStatus($absence->status),
+                'date'   => $absence->created_at->format('d/m/Y'),
+                'sort'   => $absence->created_at,
+            ];
+        });
 
-        $recentExpenses = HrRequest::with('status')
-            ->where('user_id', $user->id)
-            ->where('type', HrRequest::TYPE_EXPENSE)
-            ->latest()
-            ->take(5)
-            ->get()
-            ->map(function ($expense) {
-                return [
-                    'title'  => $expense->description ?: $expense->title,
-                    'type'   => 'Gasto',
-                    'status' => $expense->status->name ?? 'Pendiente',
-                    'date'   => $expense->created_at->format('d/m/Y'),
-                    'sort'   => $expense->created_at,
-                ];
-            });
+        $recentExpenses = $myExpenses->map(function ($expense) {
+            return [
+                'title'  => $expense->description ?: $expense->title,
+                'type'   => 'Gasto',
+                'status' => $expense->status->name ?? 'Pendiente',
+                'date'   => $expense->created_at->format('d/m/Y'),
+                'sort'   => $expense->created_at,
+            ];
+        });
 
-        $recentRequests = $recentAbsences
+        $recentRequests = collect()
+            ->merge($recentAbsences)
             ->merge($recentExpenses)
             ->sortByDesc('sort')
             ->take(5)
             ->values();
 
         // Pendientes de aprobación para la tarjeta lateral
-        $formattedPendingAbsences = $pendingAbsences->map(function ($absence) {
-            return [
-                'employee' => $absence->user?->name ?? '-',
-                'type'     => 'Ausencia',
-                'date'     => $absence->created_at->format('d/m/Y'),
-                'sort'     => $absence->created_at,
-            ];
-        });
-
-        $formattedPendingExpenses = $pendingExpenses->map(function ($expense) {
-            return [
-                'employee' => $expense->user?->name ?? '-',
-                'type'     => 'Gasto',
-                'date'     => $expense->created_at->format('d/m/Y'),
-                'sort'     => $expense->created_at,
-            ];
-        });
-
-        $pendingApprovals = $formattedPendingAbsences
-            ->merge($formattedPendingExpenses)
+        $pendingApprovals = collect()
+            ->merge($pendingAbsences->map(function ($absence) {
+                return [
+                    'employee' => $absence->user?->name ?? '-',
+                    'type'     => 'Ausencia',
+                    'date'     => $absence->created_at->format('d/m/Y'),
+                    'sort'     => $absence->created_at,
+                ];
+            }))
+            ->merge($pendingExpenses->map(function ($expense) {
+                return [
+                    'employee' => $expense->user?->name ?? '-',
+                    'type'     => 'Gasto',
+                    'date'     => $expense->created_at->format('d/m/Y'),
+                    'sort'     => $expense->created_at,
+                ];
+            }))
             ->sortByDesc('sort')
             ->take(5)
             ->values();
@@ -137,6 +158,8 @@ class DashboardController extends Controller
             'stats',
             'myAbsences',
             'myExpenses',
+            'completedAbsences',
+            'completedExpenses',
             'pendingAbsences',
             'pendingExpenses',
             'recentRequests',
@@ -150,6 +173,7 @@ class DashboardController extends Controller
             'pending_employee_signature' => 'Pendiente empleado',
             'pending_signer_signature'   => 'Pendiente firmante',
             'approved'                   => 'Aprobada',
+            'exported_to_sap'            => 'Exportada a SAP',
             'rejected'                   => 'Rechazada',
             default                      => ucfirst(str_replace('_', ' ', $status)),
         };

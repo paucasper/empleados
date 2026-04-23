@@ -4,6 +4,11 @@ import ReactDOM from "react-dom/client";
 import VacationRequest from "./Pages/VacationRequest";
 import PendingApprovals from "./Pages/PendingApprovals";
 import ExpenseRequest from "./Pages/ExpenseRequest";
+import EmployeeCalendar from "./Pages/EmployeeCalendar";
+import Alpine from "alpinejs";
+
+window.Alpine = Alpine;
+Alpine.start();
 
 const vacationEl = document.getElementById("vacation-request-root");
 if (vacationEl) {
@@ -20,4 +25,10 @@ const expenseEl = document.getElementById("expense-request-root");
 if (expenseEl) {
     const pernr = expenseEl.dataset.pernr;
     ReactDOM.createRoot(expenseEl).render(<ExpenseRequest pernr={pernr} />);
+}
+
+const calendarEl = document.getElementById("calendar-root");
+if (calendarEl) {
+    const pernr = calendarEl.dataset.pernr;
+    ReactDOM.createRoot(calendarEl).render(<EmployeeCalendar pernr={pernr} />);
 }

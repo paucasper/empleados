@@ -12,6 +12,7 @@ export default function VacationRequest({ pernr }) {
     const [requestId, setRequestId] = useState(null);
     const [submitMessage, setSubmitMessage] = useState("");
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
 
     const [form, setForm] = useState({
         solicitante: "",
@@ -30,16 +31,16 @@ export default function VacationRequest({ pernr }) {
         localizacion: "",
     });
 
-    const [summary] = useState({
-        totalVacaciones: 21,
-        disponiblesVacaciones: 21,
+    const [summary, setSummary] = useState({
+        totalVacaciones: 0,
+        disponiblesVacaciones: 0,
         concedidosVacaciones: 0,
         tramiteVacaciones: 0,
-        totalAsuntos: 2,
-        disponiblesAsuntos: 2,
+        totalAsuntos: 0,
+        disponiblesAsuntos: 0,
         concedidosAsuntos: 0,
         tramiteAsuntos: 0,
-        rango: "12/01/2026 - 31/01/2027",
+        rango: "-",
     });
 
     useEffect(() => {
@@ -67,6 +68,43 @@ export default function VacationRequest({ pernr }) {
                     localizacion: employeeData.localizacion || employeeData.location || "",
                 }));
 
+                const summaryRes = await api.get(`/vacations/summary/${pernr}`);
+                const summaryData = summaryRes.data ?? {};
+
+                const contingentes = summaryData.contingentes ?? [];
+
+                const vacaciones = contingentes.find((item) => item.codigoAusencia === "9001");
+                const asuntos = contingentes.find((item) => item.codigoAusencia === "9004");
+
+                setSummary({
+                    totalVacaciones: vacaciones?.total ?? summaryData.totalVacaciones ?? 0,
+                    disponiblesVacaciones:
+                        (vacaciones?.total ?? summaryData.totalVacaciones ?? 0) -
+                        (vacaciones?.consumidos ?? summaryData.concedidos ?? 0),
+                    concedidosVacaciones: vacaciones?.consumidos ?? summaryData.concedidos ?? 0,
+                    tramiteVacaciones: summaryData.enTramite ?? 0,
+
+                    totalAsuntos: asuntos?.total ?? 0,
+                    disponiblesAsuntos: (asuntos?.total ?? 0) - (asuntos?.consumidos ?? 0),
+                    concedidosAsuntos: asuntos?.consumidos ?? 0,
+                    tramiteAsuntos: 0,
+
+                    rango:
+                        summaryData.periodoInicio && summaryData.periodoFin
+                            ? `${summaryData.periodoInicio} - ${summaryData.periodoFin}`
+                            : "-",
+                });
+
+                setForm((prev) => ({
+                    ...prev,
+                    contingentesDisponibles: `Vacaciones: ${
+                        ((vacaciones?.total ?? summaryData.totalVacaciones ?? 0) -
+                            (vacaciones?.consumidos ?? summaryData.concedidos ?? 0))
+                    } | Asuntos propios: ${
+                        ((asuntos?.total ?? 0) - (asuntos?.consumidos ?? 0))
+                    }`,
+                }));
+
                 const typesRes = await api.get(`/employees/${pernr}/absence-types`);
                 const typesData = typesRes.data.data ?? typesRes.data ?? [];
                 setAbsenceTypes(typesData);
@@ -81,12 +119,101 @@ export default function VacationRequest({ pernr }) {
         fetchData();
     }, [pernr]);
 
+    useEffect(() => {
+        if (!form.fechaDesde || !form.fechaHasta || !form.motivo || !form.numeroEmpleado) {
+            setForm((prev) => ({
+                ...prev,
+                diasSolicitados: 0,
+            }));
+            return;
+        }
+
+        calculateDays(form.fechaDesde, form.fechaHasta, form.motivo);
+    }, [form.fechaDesde, form.fechaHasta, form.motivo, form.numeroEmpleado]);
+
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setForm((prev) => ({
-            ...prev,
-            [name]: value,
-        }));
+            const { name, value } = e.target;
+            setForm((prev) => ({
+                ...prev,
+                [name]: value,
+            }));
+        };
+
+        const calculateDays = async (from, to, motivo) => {
+        if (!from || !to || !motivo) {
+            setForm((prev) => ({
+                ...prev,
+                diasSolicitados: 0,
+            }));
+            return;
+        }
+
+        try {
+            const res = await api.post("/vacations/check", {
+                pernr: form.numeroEmpleado,
+                begda: from,
+                endda: to,
+                awart: motivo,
+            });
+
+            setForm((prev) => ({
+                ...prev,
+                diasSolicitados: res.data.dias ?? 0,
+            }));
+        } catch (error) {
+            console.error("Error calculando días:", error);
+            setForm((prev) => ({
+                ...prev,
+                diasSolicitados: 0,
+            }));
+        }
+    };
+
+    const handleSubmitRequest = async () => {
+        if (!form.fechaDesde || !form.fechaHasta || !form.motivo || !form.descripcion?.trim()) {
+            setSubmitMessage("Debes completar fecha desde, fecha hasta, motivo y descripción.");
+            return;
+        }
+
+        try {
+            if (submitting) return;
+
+            setSubmitting(true);
+            setSubmitMessage("");
+
+            const payload = {
+                awart: form.motivo,
+                begda: normalizeDateForApi(form.fechaDesde),
+                endda: normalizeDateForApi(form.fechaHasta),
+                description: form.descripcion,
+                comment: form.comentario,
+                location: form.localizacion,
+                phone: form.telefono,
+                signer_pernr: form.firmante,
+            };
+
+            const response = await absenceRequestApi.create(payload);
+            const newRequestId = response.data.data.id;
+
+            setRequestId(newRequestId);
+
+            await absenceRequestApi.signByEmployee(newRequestId);
+
+            setSubmitMessage("Solicitud firmada y enviada correctamente.");
+        } catch (error) {
+            console.error("Error al enviar la solicitud:", error);
+            console.error("Respuesta backend:", error?.response?.data);
+
+            const backendMessage =
+                error?.response?.data?.error ||
+                error?.response?.data?.message ||
+                JSON.stringify(error?.response?.data?.errors) ||
+                "Error al firmar y enviar la solicitud.";
+
+            setSubmitMessage(backendMessage);
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const handleCheck = async () => {
@@ -180,6 +307,19 @@ export default function VacationRequest({ pernr }) {
         return value;
     };
 
+    const formatRange = (range) => {
+        if (!range || !range.includes("-")) return "-";
+
+        const [start, end] = range.split(" - ");
+
+        const format = (date) => {
+            const [y, m, d] = date.split("-");
+            return `${d}/${m}/${y}`;
+        };
+
+        return `${format(start)} — ${format(end)}`;
+    };
+
     const handleCreateRequest = async () => {
         try {
             setSubmitMessage("");
@@ -254,49 +394,19 @@ export default function VacationRequest({ pernr }) {
                         Completa la solicitud, revisa disponibilidad, valida la información
                         y envíala a firma desde una experiencia más clara y moderna.
                     </p>
-
-                    <div className="vr-hero-meta">
-                        <div>
-                            <span>Empleado</span>
-                            <strong>{employee?.nombreCompleto || employee?.name || form.solicitante || "-"}</strong>
-                        </div>
-                        <div>
-                            <span>ID SAP</span>
-                            <strong>{form.numeroEmpleado || "-"}</strong>
-                        </div>
-                    </div>
                 </div>
 
                 <div className="vr-hero-side">
                     <div className="vr-side-card">
                         <span>Periodo</span>
-                        <strong>{summary.rango}</strong>
+                        <div className="vr-side-range">
+                            {formatRange(summary.rango)}
+                        </div>
                         <p>Resumen disponible para vacaciones y asuntos propios.</p>
                     </div>
                 </div>
             </section>
 
-            <section className="vr-summary-grid">
-                <div className="vr-summary-card">
-                    <span>Total vacaciones</span>
-                    <strong>{summary.totalVacaciones}</strong>
-                </div>
-
-                <div className="vr-summary-card">
-                    <span>Disponibles</span>
-                    <strong>{summary.disponiblesVacaciones}</strong>
-                </div>
-
-                <div className="vr-summary-card">
-                    <span>Concedidos</span>
-                    <strong>{summary.concedidosVacaciones}</strong>
-                </div>
-
-                <div className="vr-summary-card">
-                    <span>En trámite</span>
-                    <strong>{summary.tramiteVacaciones}</strong>
-                </div>
-            </section>
 
             <section className="vr-card">
                 <div className="vr-card-header">
@@ -317,25 +427,6 @@ export default function VacationRequest({ pernr }) {
                         <input type="text" name="numeroEmpleado" value={form.numeroEmpleado} readOnly />
                     </div>
 
-                    <div className="vr-field">
-                        <label>Identificador</label>
-                        <input
-                            type="text"
-                            name="identificador"
-                            value={form.identificador}
-                            onChange={handleChange}
-                        />
-                    </div>
-
-                    <div className="vr-field">
-                        <label>Contingentes disponibles</label>
-                        <input
-                            type="text"
-                            name="contingentesDisponibles"
-                            value={form.contingentesDisponibles}
-                            onChange={handleChange}
-                        />
-                    </div>
                 </div>
             </section>
 
@@ -343,23 +434,67 @@ export default function VacationRequest({ pernr }) {
                 <div className="vr-card-header">
                     <div>
                         <h2>Balance de días</h2>
-                        <p>Disponibilidad actual para vacaciones y asuntos propios.</p>
+                        <p>Consulta de forma clara la disponibilidad de vacaciones y asuntos propios.</p>
                     </div>
                 </div>
 
-                <div className="vr-balance-grid">
-                    <div className="vr-balance-column">
-                        <div className="vr-balance-item"><span>Total vacaciones</span><strong>{summary.totalVacaciones}</strong></div>
-                        <div className="vr-balance-item"><span>Disponibles</span><strong>{summary.disponiblesVacaciones}</strong></div>
-                        <div className="vr-balance-item"><span>Concedidos</span><strong>{summary.concedidosVacaciones}</strong></div>
-                        <div className="vr-balance-item"><span>En trámite</span><strong>{summary.tramiteVacaciones}</strong></div>
+                <div className="vr-balance-cards">
+                    <div className="vr-balance-box vr-balance-box-vacations">
+                        <div className="vr-balance-box-header">
+                            <div>
+                                <span className="vr-balance-tag">Vacaciones</span>
+                                <h3>Días de vacaciones</h3>
+                            </div>
+
+                        </div>
+
+                        <div className="vr-balance-stats">
+                            <div className="vr-balance-stat">
+                                <span>Total</span>
+                                <strong>{summary.totalVacaciones}</strong>
+                            </div>
+                            <div className="vr-balance-stat">
+                                <span>Disponibles</span>
+                                <strong>{summary.disponiblesVacaciones}</strong>
+                            </div>
+                            <div className="vr-balance-stat">
+                                <span>Concedidos</span>
+                                <strong>{summary.concedidosVacaciones}</strong>
+                            </div>
+                            <div className="vr-balance-stat">
+                                <span>En trámite</span>
+                                <strong>{summary.tramiteVacaciones}</strong>
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="vr-balance-column">
-                        <div className="vr-balance-item"><span>Total asuntos propios</span><strong>{summary.totalAsuntos}</strong></div>
-                        <div className="vr-balance-item"><span>Disponibles</span><strong>{summary.disponiblesAsuntos}</strong></div>
-                        <div className="vr-balance-item"><span>Concedidos</span><strong>{summary.concedidosAsuntos}</strong></div>
-                        <div className="vr-balance-item"><span>En trámite</span><strong>{summary.tramiteAsuntos}</strong></div>
+                    <div className="vr-balance-box vr-balance-box-personal">
+                        <div className="vr-balance-box-header">
+                            <div>
+                                <span className="vr-balance-tag">Asuntos propios</span>
+                                <h3>Días de asuntos propios</h3>
+                            </div>
+
+                        </div>
+
+                        <div className="vr-balance-stats">
+                            <div className="vr-balance-stat">
+                                <span>Total</span>
+                                <strong>{summary.totalAsuntos}</strong>
+                            </div>
+                            <div className="vr-balance-stat">
+                                <span>Disponibles</span>
+                                <strong>{summary.disponiblesAsuntos}</strong>
+                            </div>
+                            <div className="vr-balance-stat">
+                                <span>Concedidos</span>
+                                <strong>{summary.concedidosAsuntos}</strong>
+                            </div>
+                            <div className="vr-balance-stat">
+                                <span>En trámite</span>
+                                <strong>{summary.tramiteAsuntos}</strong>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -375,13 +510,14 @@ export default function VacationRequest({ pernr }) {
                 <div className="vr-grid vr-grid-2">
                     <div className="vr-field">
                         <label>Descripción (*)</label>
-                        <input
-                            type="text"
-                            name="descripcion"
-                            value={form.descripcion}
-                            onChange={handleChange}
-                            placeholder="Ej. Vacaciones verano"
-                        />
+                            <input
+                                type="text"
+                                name="descripcion"
+                                value={form.descripcion}
+                                onChange={handleChange}
+                                placeholder="Ej. Vacaciones verano"
+                                className={!form.descripcion && submitMessage ? "vr-input-error" : ""}
+                            />
                     </div>
 
                     <div className="vr-field">
@@ -417,12 +553,7 @@ export default function VacationRequest({ pernr }) {
                 <div className="vr-info-grid">
                     <div className="vr-info-card">
                         <span>Días solicitados</span>
-                        <strong>{form.diasSolicitados}</strong>
-                    </div>
-
-                    <div className="vr-info-card">
-                        <span>Estado</span>
-                        <strong>{form.estado}</strong>
+                        <strong>{form.diasSolicitados || 0}</strong>
                     </div>
                 </div>
             </section>
@@ -438,18 +569,19 @@ export default function VacationRequest({ pernr }) {
                 <div className="vr-grid vr-grid-3">
                     <div className="vr-field">
                         <label>Fecha Desde (*)</label>
-                        <DatePicker
-                            selected={parseDate(form.fechaDesde)}
-                            onChange={(date) =>
-                                setForm((prev) => ({
-                                    ...prev,
-                                    fechaDesde: formatDate(date),
-                                }))
-                            }
-                            dateFormat="dd/MM/yyyy"
-                            placeholderText="Selecciona fecha"
-                            className="vr-datepicker"
-                        />
+                            <DatePicker
+                                selected={parseDate(form.fechaDesde)}
+                                onChange={(date) =>
+                                    setForm((prev) => ({
+                                        ...prev,
+                                        fechaDesde: formatDate(date),
+                                    }))
+                                }
+                                dateFormat="dd/MM/yyyy"
+                                placeholderText="Selecciona fecha"
+                                className="vr-datepicker"
+                                
+                            />
                     </div>
 
                     <div className="vr-field">
@@ -497,20 +629,13 @@ export default function VacationRequest({ pernr }) {
                 </div>
 
                 <div className="vr-actions">
-                    <button type="button" className="vr-btn vr-btn-secondary" onClick={handleValidate}>
-                        Validar
-                    </button>
-
-                    <button type="button" className="vr-btn vr-btn-outline" onClick={handleCheck}>
-                        Calcular días
-                    </button>
-
-                    <button type="button" className="vr-btn vr-btn-muted" onClick={handleCreateRequest}>
-                        Guardar solicitud
-                    </button>
-
-                    <button type="button" className="vr-btn vr-btn-primary" onClick={handleSignEmployee}>
-                        Firmar y enviar
+                    <button
+                        type="button"
+                        className="vr-btn vr-btn-primary"
+                        onClick={handleSubmitRequest}
+                        disabled={submitting}
+                    >
+                        {submitting ? "Enviando..." : "Firmar y enviar"}
                     </button>
                 </div>
 

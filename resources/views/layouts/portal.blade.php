@@ -1,72 +1,82 @@
 @extends('layouts.app')
 
 @section('body')
-    <div class="min-h-screen bg-gray-100">
-        <!-- Header -->
-        <header class="bg-green-800 text-white shadow">
-            <div class="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
-                <div class="flex items-center gap-4">
-                    <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-2xl font-bold">
+    <div class="min-h-screen bg-[#f8f9f5]">
+        <header class="bg-[#2d4a2a] text-white shadow-xl relative overflow-hidden">
+            <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[#c5a35d]/10 blur-3xl"></div>
+            
+            <div class="relative mx-auto flex max-w-7xl flex-col gap-6 px-6 py-8 lg:flex-row lg:items-center lg:justify-between">
+                <div class="flex items-center gap-5">
+                    <div class="flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-white/10 text-2xl font-serif italic text-[#c5a35d] backdrop-blur-sm border border-white/10 shadow-inner">
                         D
                     </div>
 
                     <div>
-                        <p class="text-sm uppercase tracking-[0.2em] text-green-100">Portal interno</p>
-                        <h1 class="text-3xl font-light md:text-5xl">Tramitaciones</h1>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.3em] text-[#e5cf9e]/80">Ecosistema Digital</p>
+                        <h1 class="text-4xl font-light tracking-tight md:text-5xl">
+                            Tramitaciones <span class="font-serif italic text-[#c5a35d]">Internas</span>
+                        </h1>
                     </div>
                 </div>
 
-                <div class="text-left lg:text-right">
-                    <p class="text-sm text-green-100">Bienvenido/a</p>
-                    <p class="text-lg font-semibold">{{ auth()->user()->name }}</p>
+                <div class="flex flex-col border-l border-white/10 pl-6 lg:text-right">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-[#e5cf9e]/60">Sesión activa</p>
+                    <p class="text-xl font-medium tracking-tight">{{ auth()->user()->name }}</p>
 
                     <form method="POST" action="{{ route('logout') }}" class="mt-2">
                         @csrf
-                        <button
-                            type="submit"
-                            class="text-sm text-green-100 underline transition hover:text-white"
-                        >
-                            Cerrar sesión
+                        <button type="submit" class="group flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-white/50 transition hover:text-[#c5a35d] lg:justify-end">
+                            <span>Cerrar sesión</span>
+                            <span class="transition-transform group-hover:translate-x-1">→</span>
                         </button>
                     </form>
                 </div>
             </div>
         </header>
 
-        <!-- Navbar -->
-        <nav class="border-b border-green-900 bg-lime-700 text-white shadow-sm">
-            <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-6 py-3 text-sm font-semibold md:gap-4">
+        <nav class="sticky top-0 z-50 border-b border-gray-100 bg-white/80 backdrop-blur-md">
+            <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-1 px-6 py-3 text-[11px] font-bold uppercase tracking-widest">
                 <a href="{{ route('dashboard') }}"
-                   class="rounded-lg px-4 py-2 transition hover:bg-white/10 {{ request()->routeIs('dashboard') ? 'bg-white/15' : '' }}">
+                   class="rounded-xl px-5 py-2.5 transition-all {{ request()->routeIs('dashboard') ? 'bg-[#2d4a2a] text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50 hover:text-[#2d4a2a]' }}">
                     Inicio
                 </a>
 
                 <a href="{{ route('pending-approvals') }}"
-                   class="rounded-lg px-4 py-2 transition hover:bg-white/10 {{ request()->routeIs('pending-approvals') ? 'bg-white/15' : '' }}">
-                    Bandeja de entrada
+                   class="rounded-xl px-5 py-2.5 transition-all {{ request()->routeIs('pending-approvals') ? 'bg-[#2d4a2a] text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50 hover:text-[#2d4a2a]' }}">
+                    Bandeja Entrada
                 </a>
 
                 <a href="{{ route('vacations') }}"
-                   class="rounded-lg px-4 py-2 transition hover:bg-white/10 {{ request()->routeIs('vacations') ? 'bg-white/15' : '' }}">
-                    Nueva ausencia
+                   class="rounded-xl px-5 py-2.5 transition-all {{ request()->routeIs('vacations') ? 'bg-[#2d4a2a] text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50 hover:text-[#2d4a2a]' }}">
+                    Nueva Ausencia
                 </a>
 
                 <a href="#"
-                   class="rounded-lg px-4 py-2 transition hover:bg-white/10">
-                    Nuevo gastos
+                   class="rounded-xl px-5 py-2.5 text-gray-400 transition-all hover:bg-gray-50 hover:text-[#2d4a2a]">
+                    Nuevo Gasto
                 </a>
 
                 @if(auth()->user()->role === 'admin')
-                    <a href="#"
-                       class="rounded-lg px-4 py-2 transition hover:bg-white/10">
-                        Administración
-                    </a>
+                    <div class="ml-auto">
+                        <a href="#"
+                           class="rounded-xl border border-[#c5a35d]/20 bg-[#fcfcf9] px-5 py-2.5 text-[#c5a35d] transition-all hover:bg-[#c5a35d] hover:text-white">
+                            Administración
+                        </a>
+                    </div>
                 @endif
             </div>
         </nav>
 
-        <main class="mx-auto max-w-7xl px-6 py-8">
+        <main class="mx-auto max-w-7xl px-6 py-12">
             @yield('content')
         </main>
+        
+        <footer class="mx-auto max-w-7xl px-6 pb-12">
+            <div class="border-t border-gray-200 pt-8 text-center">
+                <p class="text-[10px] font-medium uppercase tracking-[0.5em] text-gray-400">
+                    Dcoop Sistemas · Proceso de Gestión de Activos
+                </p>
+            </div>
+        </footer>
     </div>
 @endsection

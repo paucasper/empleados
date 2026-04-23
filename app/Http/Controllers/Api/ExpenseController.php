@@ -40,22 +40,6 @@ class ExpenseController extends Controller
             ], 422);
         }
 
-        
-        // ← Estado inicial: pendiente de firma del empleado (igual que ausencias)
-        $status = RequestStatus::where('code', RequestStatus::PENDING_EMPLOYEE_SIGNATURE)->firstOrFail();
-
-        $expenseRequest = HrRequest::create([
-            'type'            => HrRequest::TYPE_EXPENSE,
-            'user_id'         => $user->id,
-            'sap_employee_id' => $user->sap_employee_id,
-            'approver_user_id'=> $signer->id,
-            'status_id'       => $status->id,
-            'title'           => $validated['title'] ?? null,
-            'description'     => $validated['description'] ?? null,
-        ]);
-
-        $expenseRequest->load(['status', 'user', 'approver', 'items']);
-
         $adminPernr = str_pad(trim($validated['admin_pernr']), 8, '0', STR_PAD_LEFT);
         $admin = User::where('sap_employee_id', $adminPernr)->first();
 
@@ -66,25 +50,28 @@ class ExpenseController extends Controller
             ], 422);
         }
 
+        $status = RequestStatus::where('code', RequestStatus::PENDING_EMPLOYEE_SIGNATURE)->firstOrFail();
+
         $expenseRequest = HrRequest::create([
             'type'             => HrRequest::TYPE_EXPENSE,
             'user_id'          => $user->id,
             'sap_employee_id'  => $user->sap_employee_id,
             'approver_user_id' => $signer->id,
-            'admin_user_id'    => $admin->id, // ← añadir
+            'admin_user_id'    => $admin->id,
             'status_id'        => $status->id,
             'title'            => $validated['title'] ?? null,
             'description'      => $validated['description'] ?? null,
         ]);
+        app(\App\Services\WorkflowNotificationService::class)
+            ->sendExpenseCreated($expenseRequest);
+
+        $expenseRequest->load(['status', 'user', 'approver', 'admin', 'items']);
 
         return response()->json([
             'success' => true,
             'message' => 'Solicitud de gasto creada correctamente.',
             'data'    => $expenseRequest,
         ], 201);
-
-
-
     }
 
     // ← NUEVO: el empleado firma su propia solicitud
@@ -141,6 +128,10 @@ class ExpenseController extends Controller
             'status_id'   => $pendingAdminStatus->id,
             'approved_at' => now(),
         ]);
+
+        app(\App\Services\WorkflowNotificationService::class)
+            ->sendExpenseCreated($expenseRequest);
+
 
         return response()->json([
             'success' => true,
@@ -222,12 +213,13 @@ class ExpenseController extends Controller
             return response()->json(['message' => 'La solicitud no está pendiente de aprobación por administración.'], 409);
         }
 
-        $approvedStatus  = RequestStatus::where('code', RequestStatus::APPROVED)->firstOrFail();
-        $exportedStatus  = RequestStatus::where('code', RequestStatus::EXPORTED_TO_SAP)->firstOrFail();
+        $approvedStatus = RequestStatus::where('code', RequestStatus::APPROVED)->firstOrFail();
+        $exportedStatus = RequestStatus::where('code', RequestStatus::EXPORTED_TO_SAP)->firstOrFail();
 
         $expenseRequest->update([
-            'status_id'   => $approvedStatus->id,
-            'approved_at' => now(),
+            'status_id'                => $approvedStatus->id,
+            'approved_at'              => now(),
+            'administration_signed_at' => now(),
         ]);
 
         $content  = $sapFileService->generateExpenseFile($expenseRequest);
@@ -239,6 +231,16 @@ class ExpenseController extends Controller
             'sap_exported_at' => now(),
             'status_id'       => $exportedStatus->id,
         ]);
+
+        try {
+            app(\App\Services\WorkflowNotificationService::class)
+                ->sendExpenseApprovedByAdmin($expenseRequest->fresh());
+        } catch (\Throwable $e) {
+            \Log::error('Error enviando correo de aprobación administrativa del gasto', [
+                'expense_request_id' => $expenseRequest->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json([
             'success' => true,

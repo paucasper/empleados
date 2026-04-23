@@ -3,504 +3,375 @@
 @section('title', 'Inicio')
 
 @section('content')
-    <div class="space-y-10">
-        <!-- Hero -->
-        <div class="mb-2 flex items-center justify-between gap-4"></div>
+    <div class="space-y-12 pb-16">
+        
+        <section class="relative overflow-hidden rounded-[3rem] bg-[#2f4a27] text-white shadow-[0_30px_70px_-15px_rgba(47,74,39,0.3)]">
+            <div class="absolute -right-20 -top-20 h-96 w-96 rounded-full bg-[#c5a35d]/10 blur-[100px]"></div>
+            <div class="absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-white/5 blur-[80px]"></div>
 
-        <section class="relative overflow-hidden rounded-[2rem] border border-emerald-200/60 bg-gradient-to-br from-emerald-700 via-emerald-600 to-teal-600 text-white shadow-[0_20px_60px_-20px_rgba(5,150,105,0.45)]">
-            <!-- decor -->
-            <div class="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-3xl"></div>
-            <div class="absolute bottom-0 right-1/4 h-40 w-40 rounded-full bg-teal-300/10 blur-2xl"></div>
-
-            <div class="relative grid gap-8 px-8 py-10 lg:grid-cols-[1.35fr_0.85fr] lg:px-10 lg:py-12">
+            <div class="relative grid gap-12 px-10 py-12 lg:grid-cols-[1.4fr_0.6fr] lg:px-14 lg:py-16">
                 <div>
-                    <div class="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] text-white/90 backdrop-blur-sm">
-                        Portal interno RRHH
+                    <div class="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.3em] text-[#c5a35d] backdrop-blur-md">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#c5a35d] opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-[#c5a35d]"></span>
+                        </span>
+                        Portal Interno de Tramitación
                     </div>
 
-                    <h1 class="mt-5 text-4xl font-semibold tracking-tight md:text-5xl">
-                        ¡Hola, {{ auth()->user()->name }}!
+                    <h1 class="mt-8 text-5xl font-light tracking-tight md:text-6xl">
+                        ¡Hola, <span class="font-serif italic text-[#c5a35d]">{{ auth()->user()->name }}</span>!
                     </h1>
 
-                    <p class="mt-5 max-w-2xl text-sm leading-7 text-white/90 md:text-base">
-                        Gestiona ausencias, vacaciones, aprobaciones y trámites desde un entorno
-                        claro, moderno y preparado para acompañar el crecimiento del portal.
+                    <p class="mt-6 max-w-xl text-lg leading-relaxed text-white/60 font-light">
+                        Gestiona tus <span class="text-white/90">ausencias</span>, reporta <span class="text-white/90">gastos</span> y organiza tu calendario desde el entorno digital de <span class="text-[#c5a35d] font-medium">Dcoop</span>.
                     </p>
 
-                    <div class="mt-8 flex flex-wrap gap-3">
-                        <a
-                            href="{{ route('vacations') }}"
-                            class="inline-flex items-center rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-emerald-700 shadow-sm transition hover:translate-y-[-1px] hover:bg-emerald-50"
-                        >
-                            Nuevo trámite
+                    <div class="mt-10 flex flex-wrap gap-4">
+                        <a href="{{ route('vacations') }}" class="group relative overflow-hidden rounded-2xl bg-[#c5a35d] px-8 py-4 text-sm font-bold text-[#2f4a27] transition-all hover:bg-[#d9b66d] hover:scale-[1.02] active:scale-[0.98]">
+                            NUEVO TRÁMITE
                         </a>
 
-                        <a
-                            href="{{ route('pending-approvals') }}"
-                            class="inline-flex items-center rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/15"
-                        >
-                            Ver bandeja
+                        <a href="{{ route('pending-approvals') }}" class="rounded-2xl border border-white/10 bg-white/5 px-8 py-4 text-sm font-bold text-white backdrop-blur-md transition hover:bg-white/10">
+                            VER BANDEJA
                         </a>
-                    </div>
-
-                    <div class="mt-8 flex flex-wrap gap-6 text-sm text-white/85">
-                        <div>
-                            <p class="text-[11px] uppercase tracking-[0.2em] text-white/60">Estado</p>
-                            <p class="mt-1 font-semibold">Operativo</p>
-                        </div>
-                        <div>
-                            <p class="text-[11px] uppercase tracking-[0.2em] text-white/60">Módulos</p>
-                            <p class="mt-1 font-semibold">Ausencias · Vacaciones · Gastos</p>
-                        </div>
                     </div>
                 </div>
 
-                <div class="grid gap-4">
-                    <div class="rounded-3xl border border-white/20 bg-white/10 p-5 backdrop-blur-sm">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <p class="text-sm font-medium text-white/80">Estado general</p>
-                                <p class="mt-3 text-4xl font-semibold text-white">Activo</p>
-                                <p class="mt-2 text-sm leading-6 text-white/75">
-                                    Portal disponible y flujo de tramitación operativo.
-                                </p>
-                            </div>
-                            <span class="mt-1 inline-flex h-3 w-3 rounded-full bg-emerald-300 shadow-[0_0_20px_rgba(110,231,183,0.9)]"></span>
-                        </div>
-                    </div>
 
-                    <div class="rounded-3xl border border-white/20 bg-white/10 p-5 backdrop-blur-sm">
-                        <p class="text-sm font-medium text-white/80">Actividad</p>
-                        <p class="mt-3 text-lg font-semibold text-white">Tramitaciones y aprobaciones</p>
-                        <p class="mt-2 text-sm leading-6 text-white/75">
-                            Accede rápidamente a las acciones más habituales del día a día.
-                        </p>
-
-                        <div class="mt-4 inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-white/90">
-                            Experiencia mejorada
-                        </div>
-                    </div>
-                </div>
             </div>
         </section>
 
-        <!-- Resumen -->
         <section>
-            <div class="mb-5 flex items-end justify-between gap-4">
-                <div>
-                    <h2 class="text-2xl font-semibold tracking-tight text-slate-900">Resumen</h2>
-                    <p class="mt-1 text-sm text-slate-500">
-                        Estado actual de tus procesos principales.
-                    </p>
-                </div>
-
-                <div class="hidden rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 md:inline-flex">
-                    Vista general
-                </div>
-            </div>
-
-            <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-                <div class="group rounded-[1.75rem] border border-emerald-100 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-                    <div class="flex items-start justify-between">
-                        <div>
-                            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
-                                Ausencias
-                            </p>
-                            <h3 class="mt-2 text-lg font-semibold text-slate-900">Sin firma</h3>
-                        </div>
-                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 ring-1 ring-emerald-100">
-                            <div class="h-2.5 w-2.5 rounded-full bg-emerald-500"></div>
-                        </div>
-                    </div>
-
-                    <p class="mt-6 text-4xl font-semibold tracking-tight text-slate-900">
-                        {{ $stats['unsigned_absences'] }}
-                    </p>
-
-                    <div class="mt-4 h-px w-full bg-gradient-to-r from-emerald-100 via-emerald-50 to-transparent"></div>
-
-                    <p class="mt-4 text-sm leading-6 text-slate-500">
-                        Solicitudes pendientes de completar o firmar.
-                    </p>
-                </div>
-
-                <div class="group rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-                    <div class="flex items-start justify-between">
-                        <div>
-                            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
-                                Ausencias
-                            </p>
-                            <h3 class="mt-2 text-lg font-semibold text-slate-900">En curso</h3>
-                        </div>
-                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50 ring-1 ring-slate-200">
-                            <div class="h-2.5 w-2.5 rounded-full bg-slate-500"></div>
-                        </div>
-                    </div>
-
-                    <p class="mt-6 text-4xl font-semibold tracking-tight text-slate-900">
-                        {{ $stats['active_absences'] }}
-                    </p>
-
-                    <div class="mt-4 h-px w-full bg-gradient-to-r from-slate-200 via-slate-100 to-transparent"></div>
-
-                    <p class="mt-4 text-sm leading-6 text-slate-500">
-                        Ausencias activas actualmente.
-                    </p>
-                </div>
-
-                <div class="group rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-                    <div class="flex items-start justify-between">
-                        <div>
-                            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
-                                Gastos
-                            </p>
-                            <h3 class="mt-2 text-lg font-semibold text-slate-900">Liquidaciones</h3>
-                        </div>
-                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50 ring-1 ring-slate-200">
-                            <div class="h-2.5 w-2.5 rounded-full bg-slate-500"></div>
-                        </div>
-                    </div>
-
-                    <p class="mt-6 text-4xl font-semibold tracking-tight text-slate-900">
-                        {{ $stats['active_expenses'] }}
-                    </p>
-
-                    <div class="mt-4 h-px w-full bg-gradient-to-r from-slate-200 via-slate-100 to-transparent"></div>
-
-                    <p class="mt-4 text-sm leading-6 text-slate-500">
-                        Notas de gasto en proceso.
-                    </p>
-                </div>
-
-                <div class="group rounded-[1.75rem] border border-amber-100 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-                    <div class="flex items-start justify-between">
-                        <div>
-                            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
-                                Recursos
-                            </p>
-                            <h3 class="mt-2 text-lg font-semibold text-slate-900">Documentación</h3>
-                        </div>
-                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 ring-1 ring-amber-100">
-                            <div class="h-2.5 w-2.5 rounded-full bg-amber-500"></div>
-                        </div>
-                    </div>
-
-                    <p class="mt-6 text-2xl font-semibold tracking-tight text-slate-900">
-                        Disponible
-                    </p>
-
-                    <div class="mt-4 h-px w-full bg-gradient-to-r from-amber-100 via-amber-50 to-transparent"></div>
-
-                    <p class="mt-4 text-sm leading-6 text-slate-500">
-                        Recursos y documentación interna accesibles.
-                    </p>
-                </div>
-            </div>
-        </section>
-
-        <!-- Accesos rápidos -->
-        <section>
-            <div class="mb-5 flex items-end justify-between gap-4">
-                <div>
-                    <h2 class="text-2xl font-semibold tracking-tight text-slate-900">Accesos rápidos</h2>
-                    <p class="mt-1 text-sm text-slate-500">
-                        Las acciones más utilizadas dentro del portal.
-                    </p>
-                </div>
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold tracking-tight text-[#2f4a27]">Resumen</h2>
+                <p class="text-sm text-gray-500 font-light italic mt-1">Estado actual de tus procesos principales</p>
             </div>
 
             <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                <a
-                    href="{{ route('vacations') }}"
-                    class="group rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                >
-                    <div class="flex items-center justify-between gap-4">
+                <div class="group rounded-[2rem] border border-gray-100 bg-white p-7 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
+                    <div class="flex items-start justify-between">
                         <div>
-                            <p class="text-sm font-semibold text-slate-900">Nueva ausencia</p>
-                            <p class="mt-2 text-sm leading-6 text-slate-500">
-                                Crear una nueva solicitud de ausencia o vacaciones.
-                            </p>
+                            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Ausencias</p>
+                            <h3 class="mt-2 text-lg font-bold text-[#2f4a27]">Sin firma</h3>
                         </div>
-
-                        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-2xl font-light text-emerald-600 ring-1 ring-emerald-100 transition group-hover:bg-emerald-100">
-                            +
+                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f2f4ed] text-[#2f4a27] transition group-hover:bg-[#2f4a27] group-hover:text-white">
+                            <span class="text-2xl font-light">{{ $stats['unsigned_absences'] }}</span>
                         </div>
                     </div>
-                </a>
+                    <p class="mt-6 text-xs leading-relaxed text-gray-500">Solicitudes pendientes de completar o firmar por tu parte.</p>
+                </div>
 
-                <a
-                    href="{{ route('pending-approvals') }}"
-                    class="group rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                >
-                    <div class="flex items-center justify-between gap-4">
+                <div class="group rounded-[2rem] border border-gray-100 bg-white p-7 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
+                    <div class="flex items-start justify-between">
                         <div>
-                            <p class="text-sm font-semibold text-slate-900">Bandeja de entrada</p>
-                            <p class="mt-2 text-sm leading-6 text-slate-500">
-                                Revisar y firmar solicitudes pendientes.
-                            </p>
+                            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Ausencias</p>
+                            <h3 class="mt-2 text-lg font-bold text-[#2f4a27]">En curso</h3>
                         </div>
-
-                        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 text-lg text-slate-700 ring-1 ring-slate-200 transition group-hover:bg-slate-100">
-                            →
+                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f2f4ed] text-[#2f4a27] transition group-hover:bg-[#2f4a27] group-hover:text-white">
+                            <span class="text-2xl font-light">{{ $stats['active_absences'] }}</span>
                         </div>
                     </div>
-                </a>
+                    <p class="mt-6 text-xs leading-relaxed text-gray-500">Procesos de ausencia activos actualmente en el sistema.</p>
+                </div>
 
-                <a
-                    href="#"
-                    class="group rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                >
-                    <div class="flex items-center justify-between gap-4">
+                <div class="group rounded-[2rem] border border-gray-100 bg-white p-7 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
+                    <div class="flex items-start justify-between">
                         <div>
-                            <p class="text-sm font-semibold text-slate-900">Nuevo gasto</p>
-                            <p class="mt-2 text-sm leading-6 text-slate-500">
-                                Revisar y firmar gastos pendientes.
-                            </p>
+                            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Gastos</p>
+                            <h3 class="mt-2 text-lg font-bold text-[#2f4a27]">Liquidaciones</h3>
                         </div>
-
-                        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 text-lg text-slate-700 ring-1 ring-slate-200 transition group-hover:bg-slate-100">
-                            ≡
+                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f2f4ed] text-[#2f4a27] transition group-hover:bg-[#2f4a27] group-hover:text-white">
+                            <span class="text-2xl font-light">{{ $stats['active_expenses'] }}</span>
                         </div>
                     </div>
-                </a>
+                    <p class="mt-6 text-xs leading-relaxed text-gray-500">Notas de gasto y tickets en proceso de validación.</p>
+                </div>
+
+
             </div>
         </section>
+
 
         <!-- Mis tramitaciones -->
         <section>
             <div class="mb-5 flex items-end justify-between gap-4">
                 <div>
-                    <h2 class="text-2xl font-semibold tracking-tight text-slate-900">Mis tramitaciones</h2>
-                    <p class="mt-1 text-sm text-slate-500">Estado actual de tus solicitudes en curso.</p>
+                    <h2 class="text-2xl font-bold tracking-tight text-[#2f4a27]">Mis tramitaciones</h2>
+                    <p class="mt-1 text-sm text-gray-500 font-light italic">Estado actual de tus solicitudes en curso.</p>
                 </div>
             </div>
 
             <div class="space-y-4">
+
                 {{-- Ausencias --}}
                 @forelse($myAbsences as $absence)
-                    <div class="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm">
+                    <div class="overflow-hidden rounded-[2rem] border border-gray-100 bg-white p-8 shadow-sm transition-all hover:border-[#c5a35d]/30">
                         <div class="flex items-start justify-between gap-4">
                             <div>
-                                <span class="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100">
+                                <span class="inline-flex rounded-full bg-[#f2f4ed] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#2f4a27] ring-1 ring-[#2f4a27]/10">
                                     Ausencia
                                 </span>
-                                <p class="mt-2 font-semibold text-slate-900">{{ $absence->description ?: $absence->awart }}</p>
-                                <p class="mt-1 text-sm text-slate-500">
+                                <p class="mt-3 font-bold tracking-tight text-[#2f4a27]">
+                                    {{ $absence->description ?: $absence->awart }}
+                                </p>
+                                <p class="mt-1 text-sm text-gray-500">
                                     {{ $absence->begda->format('d/m/Y') }} — {{ $absence->endda->format('d/m/Y') }}
                                 </p>
                             </div>
-                            <span class="text-xs font-semibold text-slate-400">{{ $absence->created_at->format('d/m/Y') }}</span>
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                                {{ $absence->created_at->format('d/m/Y') }}
+                            </span>
                         </div>
 
                         {{-- Stepper ausencia --}}
-                        <div class="mt-6 flex items-center gap-0">
+                        <div class="mt-8 flex items-center gap-0">
                             {{-- Paso 1: Empleado --}}
-                            <div class="flex flex-col items-center gap-2" style="min-width:80px">
-                                <div class="flex h-9 w-9 items-center justify-center rounded-full {{ $absence->employee_signed_at ? 'bg-emerald-500' : 'bg-slate-200' }}">
+                            <div class="flex flex-col items-center gap-2" style="min-width:100px">
+                                <div class="flex h-10 w-10 items-center justify-center rounded-full border-4 border-white {{ $absence->employee_signed_at ? 'bg-[#c5a35d] text-[#2f4a27]' : 'bg-gray-100 text-gray-400' }}">
                                     @if($absence->employee_signed_at)
-                                        <span class="text-sm font-bold text-white">✓</span>
+                                        <span class="text-sm font-bold">✓</span>
+                                    @else
+                                        <span class="text-xs font-bold">1</span>
                                     @endif
                                 </div>
-                                <p class="text-center text-xs font-semibold text-slate-700">{{ $user->name }}</p>
-                                <p class="text-center text-[11px] text-slate-400">
+                                <p class="text-center text-[10px] font-bold uppercase tracking-widest text-[#2f4a27]">{{ $user->name }}</p>
+                                <p class="text-center text-[10px] text-gray-400">
                                     {{ $absence->employee_signed_at ? $absence->employee_signed_at->format('d/m/Y') : 'Pendiente' }}
                                 </p>
                             </div>
 
                             {{-- Línea 1 --}}
-                            <div class="h-0.5 flex-1 {{ $absence->employee_signed_at ? 'bg-emerald-500' : 'bg-slate-200' }}"></div>
+                            <div class="h-[2px] flex-1 {{ $absence->employee_signed_at ? 'bg-[#c5a35d]' : 'bg-gray-100' }}"></div>
 
                             {{-- Paso 2: Firmante --}}
-                            <div class="flex flex-col items-center gap-2" style="min-width:80px">
-                                <div class="flex h-9 w-9 items-center justify-center rounded-full {{ $absence->signer_signed_at ? 'bg-emerald-500' : 'bg-slate-200' }}">
+                            <div class="flex flex-col items-center gap-2" style="min-width:100px">
+                                <div class="flex h-10 w-10 items-center justify-center rounded-full border-4 border-white {{ $absence->signer_signed_at ? 'bg-[#c5a35d] text-[#2f4a27]' : 'bg-gray-100 text-gray-400' }}">
                                     @if($absence->signer_signed_at)
-                                        <span class="text-sm font-bold text-white">✓</span>
+                                        <span class="text-sm font-bold">✓</span>
+                                    @else
+                                        <span class="text-xs font-bold">2</span>
                                     @endif
                                 </div>
-                                <p class="text-center text-xs font-semibold text-slate-700">{{ $absence->signer?->name ?? 'Firmante' }}</p>
-                                <p class="text-center text-[11px] text-slate-400">
+                                <p class="text-center text-[10px] font-bold uppercase tracking-widest text-[#2f4a27]">{{ $absence->signer?->name ?? 'Firmante' }}</p>
+                                <p class="text-center text-[10px] text-gray-400">
                                     {{ $absence->signer_signed_at ? $absence->signer_signed_at->format('d/m/Y') : 'Pendiente' }}
                                 </p>
                             </div>
                         </div>
                     </div>
                 @empty
-                    <div class="rounded-[1.75rem] border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+                    <div class="rounded-[2rem] border border-dashed border-gray-200 bg-gray-50/50 px-4 py-10 text-center text-sm text-gray-400 font-light italic">
                         No tienes ausencias en curso.
                     </div>
                 @endforelse
 
                 {{-- Gastos --}}
                 @forelse($myExpenses as $expense)
-                    <div class="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm">
+                    <div class="overflow-hidden rounded-[2rem] border border-gray-100 bg-white p-8 shadow-sm transition-all hover:border-[#c5a35d]/30">
                         <div class="flex items-start justify-between gap-4">
                             <div>
-                                <span class="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-100">
+                                <span class="inline-flex rounded-full bg-[#fcfcf9] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#c5a35d] ring-1 ring-[#c5a35d]/20">
                                     Gasto
                                 </span>
-                                <p class="mt-2 font-semibold text-slate-900">{{ $expense->description ?: $expense->title }}</p>
-                                <p class="mt-1 text-sm text-slate-500">{{ $expense->status->name ?? '-' }}</p>
+                                <p class="mt-3 font-bold tracking-tight text-[#2f4a27]">
+                                    {{ $expense->description ?: $expense->title }}
+                                </p>
+                                <p class="mt-1 text-sm text-gray-500">
+                                    {{ $expense->status->name ?? '-' }}
+                                </p>
                             </div>
-                            <span class="text-xs font-semibold text-slate-400">{{ $expense->created_at->format('d/m/Y') }}</span>
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                                {{ $expense->created_at->format('d/m/Y') }}
+                            </span>
                         </div>
 
                         {{-- Stepper gasto --}}
-                        <div class="mt-6 flex items-center gap-0">
+                        <div class="mt-8 flex items-center gap-0">
                             {{-- Paso 1: Solicitante --}}
-                            <div class="flex flex-col items-center gap-2" style="min-width:80px">
-                                <div class="flex h-9 w-9 items-center justify-center rounded-full {{ $expense->submitted_at ? 'bg-emerald-500' : 'bg-slate-200' }}">
+                            <div class="flex flex-col items-center gap-2" style="min-width:100px">
+                                <div class="flex h-10 w-10 items-center justify-center rounded-full border-4 border-white {{ $expense->submitted_at ? 'bg-[#c5a35d] text-[#2f4a27]' : 'bg-gray-100 text-gray-400' }}">
                                     @if($expense->submitted_at)
-                                        <span class="text-sm font-bold text-white">✓</span>
+                                        <span class="text-sm font-bold">✓</span>
+                                    @else
+                                        <span class="text-xs font-bold">1</span>
                                     @endif
                                 </div>
-                                <p class="text-center text-xs font-semibold text-slate-700">{{ $user->name }}</p>
-                                <p class="text-center text-[11px] text-slate-400">
+                                <p class="text-center text-[10px] font-bold uppercase tracking-widest text-[#2f4a27]">{{ $user->name }}</p>
+                                <p class="text-center text-[10px] text-gray-400">
                                     {{ $expense->submitted_at ? \Carbon\Carbon::parse($expense->submitted_at)->format('d/m/Y') : 'Pendiente' }}
                                 </p>
                             </div>
 
                             {{-- Línea 1 --}}
-                            <div class="h-0.5 flex-1 {{ $expense->submitted_at ? 'bg-emerald-500' : 'bg-slate-200' }}"></div>
+                            <div class="h-[2px] flex-1 {{ $expense->submitted_at ? 'bg-[#c5a35d]' : 'bg-gray-100' }}"></div>
 
                             {{-- Paso 2: Jefe --}}
-                            <div class="flex flex-col items-center gap-2" style="min-width:80px">
-                                <div class="flex h-9 w-9 items-center justify-center rounded-full {{ $expense->approved_at ? 'bg-emerald-500' : 'bg-slate-200' }}">
+                            <div class="flex flex-col items-center gap-2" style="min-width:100px">
+                                <div class="flex h-10 w-10 items-center justify-center rounded-full border-4 border-white {{ $expense->approved_at ? 'bg-[#c5a35d] text-[#2f4a27]' : 'bg-gray-100 text-gray-400' }}">
                                     @if($expense->approved_at)
-                                        <span class="text-sm font-bold text-white">✓</span>
+                                        <span class="text-sm font-bold">✓</span>
+                                    @else
+                                        <span class="text-xs font-bold">2</span>
                                     @endif
                                 </div>
-                                <p class="text-center text-xs font-semibold text-slate-700">{{ $expense->approver?->name ?? 'Jefe' }}</p>
-                                <p class="text-center text-[11px] text-slate-400">
+                                <p class="text-center text-[10px] font-bold uppercase tracking-widest text-[#2f4a27]">{{ $expense->approver?->name ?? 'Jefe' }}</p>
+                                <p class="text-center text-[10px] text-gray-400">
                                     {{ $expense->approved_at ? \Carbon\Carbon::parse($expense->approved_at)->format('d/m/Y') : 'Pendiente' }}
                                 </p>
                             </div>
 
                             {{-- Línea 2 --}}
-                            <div class="h-0.5 flex-1 {{ $expense->approved_at ? 'bg-emerald-500' : 'bg-slate-200' }}"></div>
+                            <div class="h-[2px] flex-1 {{ $expense->approved_at ? 'bg-[#c5a35d]' : 'bg-gray-100' }}"></div>
 
                             {{-- Paso 3: Admin --}}
-                            <div class="flex flex-col items-center gap-2" style="min-width:80px">
-                                <div class="flex h-9 w-9 items-center justify-center rounded-full {{ $expense->sap_exported_at ? 'bg-emerald-500' : 'bg-slate-200' }}">
+                            <div class="flex flex-col items-center gap-2" style="min-width:100px">
+                                <div class="flex h-10 w-10 items-center justify-center rounded-full border-4 border-white {{ $expense->sap_exported_at ? 'bg-[#c5a35d] text-[#2f4a27]' : 'bg-gray-100 text-gray-400' }}">
                                     @if($expense->sap_exported_at)
-                                        <span class="text-sm font-bold text-white">✓</span>
+                                        <span class="text-sm font-bold">✓</span>
+                                    @else
+                                        <span class="text-xs font-bold">3</span>
                                     @endif
                                 </div>
-                                <p class="text-center text-xs font-semibold text-slate-700">{{ $expense->admin?->name ?? 'Administración' }}</p>
-                                <p class="text-center text-[11px] text-slate-400">
+                                <p class="text-center text-[10px] font-bold uppercase tracking-widest text-[#2f4a27]">{{ $expense->admin?->name ?? 'Administración' }}</p>
+                                <p class="text-center text-[10px] text-gray-400">
                                     {{ $expense->sap_exported_at ? \Carbon\Carbon::parse($expense->sap_exported_at)->format('d/m/Y') : 'Pendiente' }}
                                 </p>
                             </div>
                         </div>
                     </div>
                 @empty
-                    <div class="rounded-[1.75rem] border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+                    <div class="rounded-[2rem] border border-dashed border-gray-200 bg-gray-50/50 px-4 py-10 text-center text-sm text-gray-400 font-light italic">
                         No tienes gastos en curso.
                     </div>
                 @endforelse
+
             </div>
         </section>
 
-        <!-- Actividad -->
-        <section class="grid gap-8 xl:grid-cols-2">
-            <div class="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
-                <div class="flex items-center justify-between border-b border-slate-100 px-6 py-5">
-                    <div>
-                        <h2 class="text-xl font-semibold text-slate-900">Últimas solicitudes</h2>
-                        <p class="mt-1 text-sm text-slate-500">
-                            Actividad reciente registrada en el sistema.
-                        </p>
+        <section>
+            <h2 class="text-xl font-bold text-[#2f4a27] mb-6">Mis trámites</h2>
+            <div class="space-y-4">
+                {{-- Ausencias finalizadas --}}
+                @forelse($completedAbsences as $absence)
+                    <div class="rounded-[2rem] border border-[#c5a35d]/20 bg-[#fcfcf9] p-8 shadow-sm">
+                        <div class="flex flex-wrap items-center justify-between gap-4">
+                            <div class="flex items-center gap-4">
+                                <div class="h-12 w-12 rounded-2xl bg-[#2f4a27] flex items-center justify-center text-[#c5a35d] font-serif italic text-xl">
+                                    A
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-[#2f4a27] tracking-tight">
+                                        {{ $absence->description ?: $absence->awart }}
+                                    </h4>
+                                    <p class="text-xs text-gray-400 font-medium tracking-wide uppercase">
+                                        {{ $absence->begda->format('d/m/Y') }} — {{ $absence->endda->format('d/m/Y') }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <span class="rounded-full bg-[#c5a35d]/10 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-[#2f4a27]">
+                                {{ $absence->status === 'exported_to_sap' ? 'Exportado a SAP' : 'Rechazado' }}
+                            </span>
+                        </div>
                     </div>
+                @empty
+                @endforelse
 
-                    <a href="#" class="text-sm font-semibold text-emerald-700 transition hover:text-emerald-800">
-                        Ver todas
-                    </a>
+                {{-- Gastos finalizados --}}
+                @forelse($completedExpenses as $expense)
+                    <div class="rounded-[2rem] border border-[#c5a35d]/20 bg-[#fcfcf9] p-8 shadow-sm">
+                        <div class="flex flex-wrap items-center justify-between gap-4">
+                            <div class="flex items-center gap-4">
+                                <div class="h-12 w-12 rounded-2xl bg-[#2f4a27] flex items-center justify-center text-[#c5a35d] font-serif italic text-xl">
+                                    G
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-[#2f4a27] tracking-tight">
+                                        {{ $expense->description ?: $expense->title ?: 'Solicitud de gasto' }}
+                                    </h4>
+                                    <p class="text-xs text-gray-400 font-medium tracking-wide uppercase">
+                                        {{ $expense->created_at->format('d/m/Y') }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <span class="rounded-full bg-[#c5a35d]/10 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-[#2f4a27]">
+                                {{ $expense->status?->code === 'exported_to_sap' ? 'Exportado a SAP' : 'Rechazado' }}
+                            </span>
+                        </div>
+                    </div>
+                @empty
+                @endforelse
+
+                @if(($completedAbsences->count() ?? 0) === 0 && ($completedExpenses->count() ?? 0) === 0)
+                    <div class="rounded-[2rem] border border-dashed border-gray-200 bg-gray-50/50 px-4 py-12 text-center text-sm text-gray-400 font-light italic">
+                        No tienes trámites finalizados todavía.
+                    </div>
+                @endif
+            </div>
+        </section>
+
+        <section class="grid gap-8 xl:grid-cols-2">
+            <div class="overflow-hidden rounded-[2.5rem] border border-gray-100 bg-white shadow-sm">
+                <div class="flex items-center justify-between border-b border-gray-50 px-8 py-6">
+                    <h2 class="text-lg font-bold text-[#2f4a27]">Últimas solicitudes</h2>
+                    
                 </div>
-
-                <div class="overflow-x-auto px-6 py-4">
-                    <table class="min-w-full">
+                <div class="overflow-x-auto px-8 py-4">
+                    <table class="w-full">
                         <thead>
-                            <tr class="border-b border-slate-100 text-left text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
-                                <th class="pb-4 pr-4">Solicitud</th>
-                                <th class="pb-4 pr-4">Tipo</th>
-                                <th class="pb-4 pr-4">Estado</th>
-                                <th class="pb-4">Fecha</th>
+                            <tr class="text-left text-[10px] font-bold uppercase tracking-widest text-gray-400 border-b border-gray-50">
+                                <th class="pb-4">Concepto</th>
+                                <th class="pb-4">Estado</th>
+                                <th class="pb-4 text-right">Fecha</th>
                             </tr>
                         </thead>
-                        <tbody class="text-sm text-slate-700">
+                        <tbody class="text-sm">
                             @forelse($recentRequests as $request)
-                                <tr class="border-b border-slate-50 last:border-b-0">
-                                    <td class="py-4 pr-4 font-medium text-slate-900">
-                                        {{ $request['title'] }}
+                                <tr class="group">
+                                    <td class="py-4 font-semibold text-[#2f4a27] group-last:pb-0">{{ $request['title'] }}</td>
+                                    <td class="py-4 group-last:pb-0">
+                                        <span class="rounded-full bg-[#f2f4ed] px-3 py-1 text-[10px] font-bold text-[#2f4a27] uppercase">{{ $request['status'] }}</span>
                                     </td>
-                                    <td class="py-4 pr-4">
-                                        {{ $request['type'] }}
-                                    </td>
-                                    <td class="py-4 pr-4">
-                                        <span class="inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-100">
-                                            {{ $request['status'] }}
-                                        </span>
-                                    </td>
-                                    <td class="py-4">
-                                        {{ $request['date'] }}
-                                    </td>
+                                    <td class="py-4 text-right text-gray-400 group-last:pb-0">{{ $request['date'] }}</td>
                                 </tr>
                             @empty
-                                <tr>
-                                    <td colspan="4" class="py-8 text-center text-sm text-slate-500">
-                                        No hay solicitudes recientes.
-                                    </td>
-                                </tr>
+                                <tr><td colspan="3" class="py-8 text-center text-xs text-gray-400 italic">Sin actividad reciente</td></tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            <div class="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
-                <div class="flex items-center justify-between border-b border-slate-100 px-6 py-5">
-                    <div>
-                        <h2 class="text-xl font-semibold text-slate-900">Pendientes de aprobación</h2>
-                        <p class="mt-1 text-sm text-slate-500">
-                            Solicitudes que requieren revisión.
-                        </p>
-                    </div>
-
-                    <a
-                        href="{{ route('pending-approvals') }}"
-                        class="text-sm font-semibold text-emerald-700 transition hover:text-emerald-800"
-                    >
-                        Ver bandeja
-                    </a>
+            <div class="overflow-hidden rounded-[2.5rem] border border-gray-100 bg-white shadow-sm">
+                <div class="flex items-center justify-between border-b border-gray-50 px-8 py-6">
+                    <h2 class="text-lg font-bold text-[#2f4a27]">Pendientes aprobación</h2>
+                    <a href="{{ route('pending-approvals') }}" class="text-xs font-bold text-[#c5a35d] uppercase tracking-widest hover:text-[#2f4a27] transition-colors">Bandeja</a>
                 </div>
-
-                <div class="space-y-4 px-6 py-5">
+                <div class="space-y-3 px-8 py-6">
                     @forelse($pendingApprovals as $approval)
-                        <div class="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4 transition hover:bg-slate-100">
+                        <div class="flex items-center justify-between rounded-2xl border border-gray-50 bg-[#fcfcf9] p-4 transition-all hover:bg-[#f2f4ed]">
                             <div>
-                                <p class="font-semibold text-slate-900">
-                                    {{ $approval['employee'] }}
-                                </p>
-                                <p class="mt-1 text-sm text-slate-500">
-                                    {{ $approval['type'] }}
-                                </p>
+                                <p class="text-sm font-bold text-[#2f4a27]">{{ $approval['employee'] }}</p>
+                                <p class="text-[10px] text-gray-400 font-medium uppercase mt-1">{{ $approval['type'] }}</p>
                             </div>
-
-                            <div class="text-right">
-                                <p class="text-sm font-medium text-slate-700">
-                                    {{ $approval['date'] }}
-                                </p>
-                                <span class="mt-2 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100">
-                                    Pendiente
-                                </span>
-                            </div>
+                            <span class="text-[10px] font-bold text-[#c5a35d]">{{ $approval['date'] }}</span>
                         </div>
                     @empty
-                        <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-                            No hay aprobaciones pendientes.
-                        </div>
+                        <div class="py-6 text-center text-xs text-gray-400 italic">No hay aprobaciones pendientes</div>
                     @endforelse
                 </div>
             </div>
         </section>
+
+        <footer class="mt-16 flex items-center justify-between border-t border-gray-100 pt-10">
+            <div class="flex flex-col">
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.4em]">Departamento de Sistemas · Dcoop</span>
+                <span class="text-[9px] text-gray-400 mt-1">Ecosistema Digital Interno · v2.6.0</span>
+            </div>
+            <div class="flex gap-4 opacity-20 grayscale">
+                </div>
+        </footer>
     </div>
 @endsection
