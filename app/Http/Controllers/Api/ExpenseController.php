@@ -62,8 +62,7 @@ class ExpenseController extends Controller
             'title'            => $validated['title'] ?? null,
             'description'      => $validated['description'] ?? null,
         ]);
-        app(\App\Services\WorkflowNotificationService::class)
-            ->sendExpenseCreated($expenseRequest);
+
 
         $expenseRequest->load(['status', 'user', 'approver', 'admin', 'items']);
 
@@ -101,6 +100,19 @@ class ExpenseController extends Controller
             'submitted_at' => now(),
         ]);
 
+        try {
+            $service = app(\App\Services\WorkflowNotificationService::class);
+            $expense = $expenseRequest->fresh()->load(['user', 'approver', 'admin', 'status']);
+
+            $service->sendExpenseSubmittedToEmployee($expense);
+            $service->sendExpenseSubmittedToApprover($expense);
+        } catch (\Throwable $e) {
+            \Log::error('Error enviando correos tras firma del empleado en gasto', [
+                'expense_request_id' => $expenseRequest->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Solicitud firmada y enviada al aprobador.',
@@ -129,8 +141,15 @@ class ExpenseController extends Controller
             'approved_at' => now(),
         ]);
 
-        app(\App\Services\WorkflowNotificationService::class)
-            ->sendExpenseCreated($expenseRequest);
+        try {
+            app(\App\Services\WorkflowNotificationService::class)
+                ->sendExpenseApprovedByApproverToAdmin($expenseRequest->fresh());
+        } catch (\Throwable $e) {
+            \Log::error('Error enviando correo a administración tras aprobación del firmante', [
+                'expense_request_id' => $expenseRequest->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
 
         return response()->json([
@@ -166,6 +185,16 @@ class ExpenseController extends Controller
             'rejected_at'      => now(),
             'rejection_reason' => $validated['reason'] ?? null,
         ]);
+
+        try {
+            app(\App\Services\WorkflowNotificationService::class)
+                ->sendExpenseRejectedByApproverToEmployee($expenseRequest->fresh());
+        } catch (\Throwable $e) {
+            \Log::error('Error enviando correo de rechazo del firmante en gasto', [
+                'expense_request_id' => $expenseRequest->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json([
             'success' => true,
@@ -217,9 +246,8 @@ class ExpenseController extends Controller
         $exportedStatus = RequestStatus::where('code', RequestStatus::EXPORTED_TO_SAP)->firstOrFail();
 
         $expenseRequest->update([
-            'status_id'                => $approvedStatus->id,
-            'approved_at'              => now(),
-            'administration_signed_at' => now(),
+            'status_id'   => $approvedStatus->id,
+            'approved_at' => now(),
         ]);
 
         $content  = $sapFileService->generateExpenseFile($expenseRequest);
@@ -227,14 +255,14 @@ class ExpenseController extends Controller
         $sapFileService->saveExpenseFile($content, $fileName);
 
         $expenseRequest->update([
-            'sap_file_name'   => $fileName,
-            'sap_exported_at' => now(),
-            'status_id'       => $exportedStatus->id,
+            'sap_file_path' => $fileName,
+            'sap_sent_at'   => now(),
+            'status_id'     => $exportedStatus->id,
         ]);
 
         try {
             app(\App\Services\WorkflowNotificationService::class)
-                ->sendExpenseApprovedByAdmin($expenseRequest->fresh());
+                ->sendExpenseApprovedByAdminToEmployee($expenseRequest->fresh());
         } catch (\Throwable $e) {
             \Log::error('Error enviando correo de aprobación administrativa del gasto', [
                 'expense_request_id' => $expenseRequest->id,
@@ -275,6 +303,16 @@ class ExpenseController extends Controller
             'rejected_at'      => now(),
             'rejection_reason' => $validated['reason'] ?? null,
         ]);
+
+        try {
+            app(\App\Services\WorkflowNotificationService::class)
+                ->sendExpenseRejectedByAdminToEmployee($expenseRequest->fresh());
+        } catch (\Throwable $e) {
+            \Log::error('Error enviando correo de rechazo de administración en gasto', [
+                'expense_request_id' => $expenseRequest->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json([
             'success' => true,
@@ -318,15 +356,45 @@ class ExpenseController extends Controller
     {
         $status = RequestStatus::where('code', RequestStatus::PENDING_EMPLOYEE_SIGNATURE)->first();
 
+        if (!$status) {
+            return response()->json([
+                'data' => null,
+            ]);
+        }
+
         $expenseRequest = HrRequest::with(['status', 'items'])
             ->where('user_id', auth()->id())
             ->where('type', HrRequest::TYPE_EXPENSE)
-            ->when($status, fn($q) => $q->where('status_id', $status->id))
+            ->where('status_id', $status->id)
+            ->where('created_at', '>=', now()->subDay())
             ->latest()
             ->first();
 
         return response()->json([
             'data' => $expenseRequest,
+        ]);
+    }
+
+    public function deleteItem(int $id): JsonResponse
+    {
+        $item = RequestItem::with('request.status')->findOrFail($id);
+        $user = auth()->user();
+
+        if ((int) $item->request->user_id !== (int) $user->id) {
+            return response()->json(['message' => 'No tienes permiso para eliminar esta línea.'], 403);
+        }
+
+        $pendingEmployeeStatus = RequestStatus::where('code', RequestStatus::PENDING_EMPLOYEE_SIGNATURE)->firstOrFail();
+
+        if ((int) $item->request->status_id !== (int) $pendingEmployeeStatus->id) {
+            return response()->json(['message' => 'Solo se pueden eliminar líneas de solicitudes pendientes de firma.'], 422);
+        }
+
+        $item->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Línea eliminada correctamente.',
         ]);
     }
 
@@ -359,19 +427,32 @@ class ExpenseController extends Controller
         $amount      = $request->input('amount');
         $unitAmount  = null;
 
+        $normalizeDecimal = function ($value): string {
+            if ($value === null || $value === '') {
+                return '0.00';
+            }
+
+            $value = str_replace(',', '.', (string) $value);
+
+            return number_format((float) $value, 2, '.', '');
+        };
+
         if ($expenseType === 'kilometraje') {
-            $unitAmount = 0.26;
-            $amount     = round((float) $quantity * $unitAmount, 2);
-        } elseif ($expenseType === 'media_dieta') {
-            $unitAmount = 15.00;
-            $amount     = round((float) $quantity * $unitAmount, 2);
-        } elseif ($expenseType === 'dieta_completa') {
-            $unitAmount = 30.00;
-            $amount     = round((float) $quantity * $unitAmount, 2);
-        } else {
+            $quantity   = $normalizeDecimal($quantity);
+            $unitAmount = '0.26';
+            $amount     = number_format(((float) $quantity) * 0.26, 2, '.', '');
+            } elseif ($expenseType === 'media_dieta') {
+                $quantity   = $normalizeDecimal($quantity);
+                $unitAmount = '0.00';
+                $amount     = '0.00';
+            } elseif ($expenseType === 'dieta_completa') {
+                $quantity   = $normalizeDecimal($quantity);
+                $unitAmount = '0.00';
+                $amount     = '0.00';
+            }else {
             $quantity   = null;
             $unitAmount = null;
-            $amount     = round((float) $amount, 2);
+            $amount     = $normalizeDecimal($amount);
         }
 
         $ticketPath         = null;

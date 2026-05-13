@@ -104,53 +104,131 @@ class WorkflowNotificationService
     /**
      * GASTOS
      */
-    public function sendExpenseCreated(HrRequest $expense): void
+
+    public function sendExpenseSubmittedToEmployee(HrRequest $expense): void
     {
         $expense->loadMissing(['user', 'approver', 'admin', 'status']);
-        $recipients = $this->collectEmails([$expense->user?->email, $expense->approver?->email, $expense->admin?->email]);
+        $recipient = $expense->user?->email;
 
-        if (empty($recipients)) return;
+        if (!$recipient) return;
 
-        Mail::to($recipients)->send(new WorkflowNotificationMail(
-            'Nueva solicitud de gasto',
-            'Nueva solicitud de gasto registrada',
-            'Se ha creado una nueva solicitud de gasto en el portal.',
+        Mail::to($recipient)->send(new WorkflowNotificationMail(
+            'Solicitud de gasto enviada',
+            'Tu solicitud de gasto ha sido enviada correctamente',
+            'Tu solicitud se ha registrado y ha quedado pendiente de revisión por el firmante asignado.',
             [
-                'Solicitante' => $expense->user?->name ?? '-',
-                'Título' => $expense->title ?: $expense->description ?: '-',
-                'Estado' => 'Pendiente de firma del responsable',
+                'Solicitante'    => $expense->user?->name ?? '-',
+                'Firmante'       => $expense->approver?->name ?? '-',
+                'Administración' => $expense->admin?->name ?? '-',
+                'Título'         => $expense->title ?: $expense->description ?: '-',
+                'Estado'         => 'Pendiente de firma del responsable',
             ]
         ));
     }
 
-    public function sendExpenseApprovedByAdmin(HrRequest $expense): void
+    public function sendExpenseSubmittedToApprover(HrRequest $expense): void
     {
         $expense->loadMissing(['user', 'approver', 'admin', 'status']);
-        $recipients = $this->collectEmails([$expense->user?->email, $expense->approver?->email, $expense->admin?->email]);
+        $recipient = $expense->approver?->email;
 
-        if (empty($recipients)) return;
+        if (!$recipient) return;
 
-        Mail::to($recipients)->send(new WorkflowNotificationMail(
-            'Solicitud de gasto aprobada por administración',
-            'La solicitud de gasto ha sido aprobada',
-            'La solicitud ha sido aprobada y exportada correctamente a SAP.',
+        Mail::to($recipient)->send(new WorkflowNotificationMail(
+            'Nueva solicitud de gasto pendiente de aprobación',
+            'Tienes una solicitud de gasto pendiente',
+            'Se ha registrado una nueva solicitud de gasto que requiere tu revisión y aprobación.',
             [
-                'Solicitante' => $expense->user?->name ?? '-',
-                'Estado' => 'Aprobado y Exportado a SAP',
+                'Solicitante'    => $expense->user?->name ?? '-',
+                'Título'         => $expense->title ?: $expense->description ?: '-',
+                'Administración' => $expense->admin?->name ?? '-',
+                'Estado'         => 'Pendiente de firma del responsable',
             ]
         ));
     }
 
-    private function getAbsenceDetails(AbsenceRequest $absence): array
+    public function sendExpenseApprovedByApproverToAdmin(HrRequest $expense): void
     {
-        return [
-            'Solicitante'  => $absence->user?->name ?? '-',
-            'Firmante'     => $absence->signer?->name ?? '-',
-            'Tipo/AWART'   => $absence->awart ?: '-',
-            'Fecha Inicio' => $absence->begda instanceof \DateTime ? $absence->begda->format('d/m/Y') : $absence->begda,
-            'Fecha Fin'    => $absence->endda instanceof \DateTime ? $absence->endda->format('d/m/Y') : $absence->endda,
-            'Estado'       => 'Pendiente de firma del responsable',
-        ];
+        $expense->loadMissing(['user', 'approver', 'admin', 'status']);
+        $recipient = $expense->admin?->email;
+
+        if (!$recipient) return;
+
+        Mail::to($recipient)->send(new WorkflowNotificationMail(
+            'Solicitud de gasto pendiente de aprobación por administración',
+            'Tienes una solicitud de gasto pendiente de revisión',
+            'La solicitud ha sido aprobada por el responsable y está pendiente de aprobación por administración.',
+            [
+                'Solicitante' => $expense->user?->name ?? '-',
+                'Firmante'    => $expense->approver?->name ?? '-',
+                'Título'      => $expense->title ?: $expense->description ?: '-',
+                'Estado'      => $expense->status?->name ?? 'Pendiente de aprobación por administración',
+            ]
+        ));
+    }
+
+    public function sendExpenseApprovedByAdminToEmployee(HrRequest $expense): void
+    {
+        $expense->loadMissing(['user', 'approver', 'admin', 'status']);
+        $recipient = $expense->user?->email;
+
+        if (!$recipient) return;
+
+        Mail::to($recipient)->send(new WorkflowNotificationMail(
+            'Solicitud de gasto aprobada',
+            'Tu solicitud de gasto ha sido aprobada',
+            'La solicitud ha sido aprobada por administración y exportada correctamente a SAP.',
+            [
+                'Solicitante'    => $expense->user?->name ?? '-',
+                'Firmante'       => $expense->approver?->name ?? '-',
+                'Administración' => $expense->admin?->name ?? '-',
+                'Título'         => $expense->title ?: $expense->description ?: '-',
+                'Estado'         => 'Aprobado y exportado a SAP',
+            ]
+        ));
+    }
+
+    public function sendExpenseRejectedByApproverToEmployee(HrRequest $expense): void
+    {
+        $expense->loadMissing(['user', 'approver', 'admin', 'status']);
+        $recipient = $expense->user?->email;
+
+        if (!$recipient) return;
+
+        Mail::to($recipient)->send(new WorkflowNotificationMail(
+            'Solicitud de gasto rechazada',
+            'Tu solicitud de gasto ha sido rechazada por el responsable',
+            'La solicitud de gasto ha sido revisada por el responsable y ha sido rechazada.',
+            [
+                'Solicitante'      => $expense->user?->name ?? '-',
+                'Firmante'         => $expense->approver?->name ?? '-',
+                'Administración'   => $expense->admin?->name ?? '-',
+                'Título'           => $expense->title ?: $expense->description ?: '-',
+                'Estado'           => 'Rechazada',
+                'Motivo rechazo'   => $expense->rejection_reason ?: '-',
+            ]
+        ));
+    }
+
+    public function sendExpenseRejectedByAdminToEmployee(HrRequest $expense): void
+    {
+        $expense->loadMissing(['user', 'approver', 'admin', 'status']);
+        $recipient = $expense->user?->email;
+
+        if (!$recipient) return;
+
+        Mail::to($recipient)->send(new WorkflowNotificationMail(
+            'Solicitud de gasto rechazada por administración',
+            'Tu solicitud de gasto ha sido rechazada por administración',
+            'La solicitud de gasto ha sido revisada por administración y ha sido rechazada.',
+            [
+                'Solicitante'      => $expense->user?->name ?? '-',
+                'Firmante'         => $expense->approver?->name ?? '-',
+                'Administración'   => $expense->admin?->name ?? '-',
+                'Título'           => $expense->title ?: $expense->description ?: '-',
+                'Estado'           => 'Rechazada',
+                'Motivo rechazo'   => $expense->rejection_reason ?: '-',
+            ]
+        ));
     }
 
     private function collectEmails(array $emails): array

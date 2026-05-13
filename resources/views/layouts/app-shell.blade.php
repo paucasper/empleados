@@ -41,7 +41,13 @@
                                 ? 'bg-[#f2f4ed] text-[#2f4a27] ring-1 ring-[#dfe6d6]'
                                 : 'text-gray-600 hover:bg-[#fcfcf9] hover:text-[#2f4a27]' }}"
                         >
-                            <span>Bandeja de entrada</span>
+                            <span class="flex items-center gap-2">
+                                Bandeja de entrada
+
+                                @if(($pendingApprovalsCount ?? 0) > 0)
+                                    <span class="flex h-2.5 w-2.5 rounded-full bg-red-500 shadow-[0_0_0_4px_rgba(239,68,68,0.15)]"></span>
+                                @endif
+                            </span>
                         </a>
 
                         <a
@@ -72,6 +78,16 @@
                                 : 'text-gray-600 hover:bg-[#fcfcf9] hover:text-[#2f4a27]' }}"
                         >
                             <span>Calendario</span>
+                        </a>
+
+                        <a
+                            href="{{ route('my-procedures') }}"
+                            class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition
+                            {{ request()->routeIs('my-procedures')
+                                ? 'bg-[#f2f4ed] text-[#2f4a27] ring-1 ring-[#dfe6d6]'
+                                : 'text-gray-600 hover:bg-[#fcfcf9] hover:text-[#2f4a27]' }}"
+                        >
+                            <span>Mis trámites</span>
                         </a>
 
                         @if(auth()->user()->role === 'admin')

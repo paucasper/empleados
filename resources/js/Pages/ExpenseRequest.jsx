@@ -3,12 +3,16 @@ import api from "../services/api";
 import "../css/expense-request.css";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import LoadingOverlay from "../components/LoadingOverlay";
 
 export default function ExpenseRequest({ pernr }) {
     const [employee, setEmployee] = useState(null);
     const [message, setMessage] = useState("");
     const [requestId, setRequestId] = useState(null);
     const [saving, setSaving] = useState(false);
+    const [loadingOverlay, setLoadingOverlay] = useState(false);
+    const [loadingMessage, setLoadingMessage] = useState("Procesando...");
+    
     
 
     
@@ -136,6 +140,7 @@ export default function ExpenseRequest({ pernr }) {
                 console.log("ARCHIVO AL AÑADIR:", expense.archivo);
                 setExpenses(
                     (request.items || []).map((item) => ({
+                        id: item.id,
                         fecha: item.expense_date,
                         tipo: mapExpenseTypeFromBackend(item.expense_type),
                         cantidad: item.quantity || "",
@@ -246,9 +251,36 @@ export default function ExpenseRequest({ pernr }) {
         return acc + parseFloat(item.importe || 0);
     }, 0);
 
-    const handleRemoveExpense = (indexToRemove) => {
-        setExpenses((prev) => prev.filter((_, index) => index !== indexToRemove));
+    const handleRemoveExpense = async (indexToRemove) => {
+        const item = expenses[indexToRemove];
+
+        try {
+            if (item.saved && item.id) {
+                const response = await fetch(`/expenses/items/${item.id}`, {
+                    method: "DELETE",
+                    credentials: "same-origin",
+                    headers: {
+                        "Accept": "application/json",
+                        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || "Error al eliminar la línea.");
+                }
+            }
+
+            setExpenses((prev) => prev.filter((_, index) => index !== indexToRemove));
+            setMessage("Línea eliminada correctamente.");
+        } catch (error) {
+            console.error(error);
+            setMessage(error.message || "Error al eliminar la línea.");
+        }
     };
+
+    
 
     const mapExpenseTypeToBackend = (type) => {
         switch (type) {
@@ -267,12 +299,14 @@ export default function ExpenseRequest({ pernr }) {
 
     const handleSubmit = async () => {
         try {
-            if (!requestId) {
-                setMessage("Primero debes guardar la solicitud.");
-                return;
-            }
+            setLoadingOverlay(true);
+            setLoadingMessage("Guardando solicitud de gastos...");
 
-            const response = await fetch(`/expenses/${requestId}/sign`, {
+            const currentRequestId = await handleSaveRequest();
+
+            setLoadingMessage("Firmando y enviando solicitud...");
+
+            const response = await fetch(`/expenses/${currentRequestId}/sign`, {
                 method: "POST",
                 credentials: "same-origin",
                 headers: {
@@ -294,28 +328,25 @@ export default function ExpenseRequest({ pernr }) {
         } catch (error) {
             console.error(error);
             setMessage(error.message || "Error al firmar la solicitud.");
+        } finally {
+            setLoadingOverlay(false);
         }
     };
     
     const handleSaveRequest = async () => {
-        try {
-            if (expenses.length === 0) {
-                setMessage("Debes añadir al menos un gasto antes de guardar.");
-                return;
-            }
+        if (expenses.length === 0) {
+            throw new Error("Debes añadir al menos un gasto antes de guardar.");
+        }
 
-            setMessage("");
+        let currentRequestId = requestId;
 
+        if (!currentRequestId) {
             const payload = {
                 signer_pernr: form.firmante,
                 admin_pernr: form.firmaAdministr,
                 title: "Solicitud de gastos prueba",
-                description: ''
+                description: ""
             };
-
-            console.log("Payload cabecera:", payload);
-
-
 
             const response = await fetch("/expenses", {
                 method: "POST",
@@ -330,87 +361,66 @@ export default function ExpenseRequest({ pernr }) {
 
             const data = await response.json();
 
-            console.log("STATUS CABECERA:", response.status);
-            console.log("RESPUESTA CABECERA:", data);
-
             if (!response.ok) {
                 throw new Error(data.message || "Error al crear la solicitud");
             }
 
-            const currentRequestId = data.data.id;
-            console.log("REQUEST ID:", currentRequestId);
-
+            currentRequestId = data.data.id;
             setRequestId(currentRequestId);
+        }
 
-            for (const item of expenses) {
-
-                console.log("ARCHIVO ES FILE:", item.archivo instanceof File);
-
-
-
-                const formData = new FormData();
-                formData.append(
-                    "expense_type",
-                    item.tipo === "KM"
-                        ? "kilometraje"
-                        : item.tipo === "OTROS"
-                        ? "otros_gastos"
-                        : item.tipo === "MEDIA_DIETA"
-                        ? "media_dieta"
-                        : item.tipo === "DIETA_COMPLETA"
-                        ? "dieta_completa"
-                        : ""
-                );
-
-                formData.append("expense_date", item.fecha);
-                formData.append("description", item.motivo || "");
-                formData.append("is_card_payment", item.pagoTarjeta ? "1" : "0");
-
-
-                console.log("ARCHIVO DEL ITEM:", item.archivo);
-                console.log("FORMDATA TICKET:", formData.get("ticket"));
-
-                if (item.tipo === "OTROS") {
-                    formData.append("amount", item.importe);
-                } else {
-                    formData.append("quantity", item.cantidad);
-                }
-
-                if (item.archivo) {
-                    formData.append("ticket", item.archivo);
-                    console.log("DESPUÉS DEL APPEND:", formData.get("ticket"));
-                }
-
-                const itemResponse = await fetch(`/expenses/${currentRequestId}/items`, {
-                    method: "POST",
-                    credentials: "same-origin",
-                    headers: {
-                        "Accept": "application/json",
-                        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
-                    },
-                    body: formData,
-                });
-
-                const itemData = await itemResponse.json();
-
-                console.log("STATUS ITEM:", itemResponse.status);
-                console.log("RESPUESTA ITEM:", itemData);
-
-                if (!itemResponse.ok) {
-                    throw new Error(itemData.message || "Error al guardar una línea");
-                }
+        for (const item of expenses) {
+            if (item.saved) {
+                continue;
             }
 
-            setMessage("Solicitud y líneas guardadas correctamente.");
-        } catch (error) {
-            console.error("ERROR GUARDANDO:", error);
-            setMessage(error.message || "Error al guardar.");
+            const formData = new FormData();
+
+            formData.append("expense_type", mapExpenseTypeToBackend(item.tipo));
+            formData.append("expense_date", item.fecha);
+            formData.append("description", item.motivo || "");
+            formData.append("is_card_payment", item.pagoTarjeta ? "1" : "0");
+
+            if (item.tipo === "OTROS") {
+                formData.append("amount", item.importe);
+            } else {
+                formData.append("quantity", item.cantidad);
+            }
+
+            if (item.archivo) {
+                formData.append("ticket", item.archivo);
+            }
+
+            const itemResponse = await fetch(`/expenses/${currentRequestId}/items`, {
+                method: "POST",
+                credentials: "same-origin",
+                headers: {
+                    "Accept": "application/json",
+                    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: formData,
+            });
+
+            const itemData = await itemResponse.json();
+
+            if (!itemResponse.ok) {
+                throw new Error(itemData.message || "Error al guardar una línea");
+            }
         }
+
+        setExpenses((prev) =>
+            prev.map((item) => ({
+                ...item,
+                saved: true,
+            }))
+        );
+
+        return currentRequestId;
     };
 
     return (
         <div className="er-page">
-
+            <LoadingOverlay show={loadingOverlay} message={loadingMessage} />
             {/* HERO */}
             <section className="er-hero">
                 <h1>Gestión de gastos</h1>
@@ -533,25 +543,56 @@ export default function ExpenseRequest({ pernr }) {
                     <div className="er-field">
                         <label>Ticket</label>
 
-                        <label className="er-upload">
-                            Subir ticket
-                            <input
-                                type="file"
-                                hidden
-                                onChange={(e) =>
-                                    setExpense((prev) => ({
-                                        ...prev,
-                                        archivo: e.target.files[0],
-                                    }))
-                                }
-                            />
-                        </label>
+                        <div className="flex gap-3">
 
-                        {expense.archivo && (
-                            <div className="er-upload-preview">
-                                {expense.archivo.name}
-                            </div>
-                        )}
+                            {/* HACER FOTO */}
+                            <label className="er-upload">
+                                Hacer foto
+
+                                <input
+                                    type="file"
+                                    name="ticket"
+                                    accept="image/*"
+                                    capture="environment"
+                                    hidden
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0] || null;
+
+                                        setExpense((prev) => ({
+                                            ...prev,
+                                            archivo: file,
+                                        }));
+                                    }}
+                                />
+                            </label>
+
+                            {/* SUBIR ARCHIVO */}
+                            <label className="er-upload">
+                                Subir ticket
+
+                                <input
+                                    type="file"
+                                    name="ticket"
+                                    accept="image/*,.pdf"
+                                    hidden
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0] || null;
+
+                                        setExpense((prev) => ({
+                                            ...prev,
+                                            archivo: file,
+                                        }));
+                                    }}
+                                />
+                            </label>
+
+                            {/* NOMBRE ARCHIVO */}
+                            {expense.archivo && (
+                                <p className="text-xs text-gray-500">
+                                    Archivo seleccionado: <strong>{expense.archivo.name}</strong>
+                                </p>
+                            )}
+                        </div>
                     </div>
 
                     <div className="er-field er-field-full">

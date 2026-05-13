@@ -5,13 +5,14 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\AbsenceRequest;
 use App\Services\SapFileService;
+use App\Services\SapVacationService;
 use Illuminate\Http\Request;
 use App\Services\WorkflowNotificationService;
 use Carbon\Carbon;
 
 class AbsenceRequestController extends Controller
 {
-public function store(Request $request)
+    public function store(Request $request, SapVacationService $sapVacationService)
     {
         $validated = $request->validate([
             'awart' => ['required', 'string'],
@@ -36,6 +37,25 @@ public function store(Request $request)
         if (!$signer) {
             return response()->json(['success' => false, 'message' => 'Firmante no encontrado.'], 422);
         }
+
+        $diasSolicitados = $sapVacationService->checkDays(
+        $user->sap_employee_id,
+        $validated['begda'],
+        $validated['endda'],
+        $validated['awart']
+    );
+
+    $diasDisponibles = $sapVacationService->getAvailableDaysForAwart(
+        $user->sap_employee_id,
+        $validated['awart']
+    );
+
+    if ($diasSolicitados > $diasDisponibles) {
+        return response()->json([
+            'success' => false,
+            'message' => "No puedes solicitar {$diasSolicitados} días. Solo tienes {$diasDisponibles} disponibles.",
+        ], 422);
+    }
 
         $absenceRequest = AbsenceRequest::create([
             'user_id' => $user->id,

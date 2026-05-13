@@ -4,6 +4,7 @@ import "../css/vacation-request.css";
 import absenceRequestApi from "../services/absenceRequestApi";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import LoadingOverlay from "../components/LoadingOverlay";
 
 
 export default function VacationRequest({ pernr }) {
@@ -13,6 +14,8 @@ export default function VacationRequest({ pernr }) {
     const [submitMessage, setSubmitMessage] = useState("");
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [loadingOverlay, setLoadingOverlay] = useState(false);
+    const [loadingMessage, setLoadingMessage] = useState("Procesando...");
 
     const [form, setForm] = useState({
         solicitante: "",
@@ -105,9 +108,14 @@ export default function VacationRequest({ pernr }) {
                     }`,
                 }));
 
-                const typesRes = await api.get(`/employees/${pernr}/absence-types`);
-                const typesData = typesRes.data.data ?? typesRes.data ?? [];
-                setAbsenceTypes(typesData);
+                setAbsenceTypes(
+                    contingentes.map((item) => ({
+                        codigo: item.codigoAusencia,
+                        descripcion: item.identificador,
+                        total: item.total ?? 0,
+                        consumidos: item.consumidos ?? 0,
+                    }))
+                );
             } catch (error) {
                 console.error("Error cargando datos:", error);
                 setSubmitMessage("Error cargando los datos del empleado.");
@@ -179,6 +187,8 @@ export default function VacationRequest({ pernr }) {
             if (submitting) return;
 
             setSubmitting(true);
+            setLoadingOverlay(true);
+            setLoadingMessage("Creando solicitud de ausencia...");
             setSubmitMessage("");
 
             const payload = {
@@ -197,6 +207,8 @@ export default function VacationRequest({ pernr }) {
 
             setRequestId(newRequestId);
 
+            setLoadingMessage("Firmando y enviando solicitud...");
+
             await absenceRequestApi.signByEmployee(newRequestId);
 
             setSubmitMessage("Solicitud firmada y enviada correctamente.");
@@ -213,6 +225,7 @@ export default function VacationRequest({ pernr }) {
             setSubmitMessage(backendMessage);
         } finally {
             setSubmitting(false);
+            setLoadingOverlay(false);
         }
     };
 
@@ -386,6 +399,7 @@ export default function VacationRequest({ pernr }) {
 
     return (
         <div className="vr-page">
+            <LoadingOverlay show={loadingOverlay} message={loadingMessage} />
             <section className="vr-hero">
                 <div className="vr-hero-content">
                     <div className="vr-badge">NUEVO TRÁMITE</div>
@@ -607,12 +621,16 @@ export default function VacationRequest({ pernr }) {
                             value={form.motivo}
                             onChange={handleChange}
                         >
-                            <option value="">{'<< Elija un motivo >>'}</option>
-                            {absenceTypes.map((item) => (
-                                <option key={item.codigo} value={item.codigo}>
-                                    {item.descripcion}
-                                </option>
-                            ))}
+                            <option value="">{"<< Elija un motivo >>"}</option>
+
+                            {absenceTypes.map((item) => {
+                                
+                                return (
+                                    <option key={item.codigo} value={item.codigo}>
+                                        {item.descripcion} 
+                                    </option>
+                                );
+                            })}
                         </select>
                     </div>
                 </div>

@@ -61,6 +61,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/expenses/{id}/reject-admin', [ExpenseController::class, 'rejectByAdmin']);
     Route::get('/expenses/mine', [ExpenseController::class, 'myRequests']);
 
+    Route::get('/mis-tramites', [DashboardController::class, 'myProcedures']) ->middleware(['auth']) ->name('my-procedures');
+    
+    Route::delete('/expenses/items/{id}', [ExpenseController::class, 'deleteItem']) ->name('expenses.items.delete');
+
 
     
     

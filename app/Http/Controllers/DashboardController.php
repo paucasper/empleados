@@ -178,4 +178,59 @@ class DashboardController extends Controller
             default                      => ucfirst(str_replace('_', ' ', $status)),
         };
     }
+
+    public function myProcedures()
+    {
+        $user = auth()->user();
+
+        $absences = AbsenceRequest::with(['signer'])
+            ->where('user_id', $user->id)
+            ->latest()
+            ->get()
+            ->map(function ($absence) {
+                return [
+                    'id' => $absence->id,
+                    'type' => 'absence',
+                    'label' => 'Ausencia',
+                    'title' => $absence->description ?: $absence->awart,
+                    'status' => $absence->status,
+                    'date' => $absence->created_at,
+                    'year' => $absence->created_at->format('Y'),
+                    'from' => $absence->begda?->format('d/m/Y'),
+                    'to' => $absence->endda?->format('d/m/Y'),
+                ];
+            });
+
+        $expenses = HrRequest::with(['status', 'approver', 'admin'])
+            ->where('user_id', $user->id)
+            ->where('type', HrRequest::TYPE_EXPENSE)
+            ->latest()
+            ->get()
+            ->map(function ($expense) {
+                return [
+                    'id' => $expense->id,
+                    'type' => 'expense',
+                    'label' => 'Gasto',
+                    'title' => $expense->title ?: $expense->description ?: 'Solicitud de gasto',
+                    'status' => $expense->status?->code ?? '-',
+                    'date' => $expense->created_at,
+                    'year' => $expense->created_at->format('Y'),
+                    'from' => $expense->created_at->format('d/m/Y'),
+                    'to' => null,
+                ];
+            });
+
+        $procedures = collect()
+            ->concat($absences)
+            ->concat($expenses)
+            ->sortByDesc('date')
+            ->values();
+            
+        $years = $procedures
+            ->pluck('year')
+            ->unique()
+            ->values();
+
+        return view('my-procedures', compact('procedures', 'years'));
+    }
 }
