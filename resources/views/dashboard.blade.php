@@ -20,7 +20,7 @@
                     </div>
 
                     <h1 class="mt-8 text-5xl font-light tracking-tight md:text-6xl">
-                        ¡Hola, <span class="font-serif italic text-[#c5a35d]">{{ auth()->user()->name }}</span>!
+                        ¡Hola, <span class="font-serif italic text-[#c5a35d]">{{ $dashboardName }}</span>!
                     </h1>
 
                     <p class="mt-6 max-w-xl text-lg leading-relaxed text-white/60 font-light">

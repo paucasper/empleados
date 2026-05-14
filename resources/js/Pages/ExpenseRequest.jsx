@@ -302,9 +302,11 @@ export default function ExpenseRequest({ pernr }) {
             setLoadingOverlay(true);
             setLoadingMessage("Guardando solicitud de gastos...");
 
-            const currentRequestId = await handleSaveRequest();
+            const currentRequestId = await handleSaveRequest(true);
 
-            setLoadingMessage("Firmando y enviando solicitud...");
+            setLoadingMessage("Firmando y enviando solicitud de gastos...");
+
+            await new Promise((resolve) => setTimeout(resolve, 100));
 
             const response = await fetch(`/expenses/${currentRequestId}/sign`, {
                 method: "POST",
@@ -324,7 +326,7 @@ export default function ExpenseRequest({ pernr }) {
             setMessage("Solicitud firmada y enviada al aprobador correctamente.");
             setExpenses([]);
             setRequestId(null);
-            setForm(prev => ({ ...prev, descripcion: "" }));
+            setForm((prev) => ({ ...prev, descripcion: "" }));
         } catch (error) {
             console.error(error);
             setMessage(error.message || "Error al firmar la solicitud.");
@@ -332,90 +334,119 @@ export default function ExpenseRequest({ pernr }) {
             setLoadingOverlay(false);
         }
     };
-    
-    const handleSaveRequest = async () => {
-        if (expenses.length === 0) {
-            throw new Error("Debes añadir al menos un gasto antes de guardar.");
+
+    const handleSaveButton = async () => {
+        try {
+            await handleSaveRequest(false);
+            setMessage("Solicitud y líneas guardadas correctamente.");
+        } catch (error) {
+            console.error("ERROR GUARDANDO:", error);
+            setMessage(error.message || "Error al guardar.");
         }
+    };
 
-        let currentRequestId = requestId;
-
-        if (!currentRequestId) {
-            const payload = {
-                signer_pernr: form.firmante,
-                admin_pernr: form.firmaAdministr,
-                title: "Solicitud de gastos prueba",
-                description: ""
-            };
-
-            const response = await fetch("/expenses", {
-                method: "POST",
-                credentials: "same-origin",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
-                },
-                body: JSON.stringify(payload),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || "Error al crear la solicitud");
+    const handleSaveRequest = async (keepOverlay = false) => {
+        try {
+            if (!keepOverlay) {
+                setLoadingOverlay(true);
+                setLoadingMessage("Guardando solicitud de gastos...");
             }
 
-            currentRequestId = data.data.id;
-            setRequestId(currentRequestId);
+            setSaving(true);
+
+            if (expenses.length === 0) {
+                throw new Error("Debes añadir al menos un gasto antes de guardar.");
+            }
+
+            let currentRequestId = requestId;
+
+            if (!currentRequestId) {
+                const payload = {
+                    signer_pernr: form.firmante,
+                    admin_pernr: form.firmaAdministr,
+                    title: "Solicitud de gastos prueba",
+                    description: "",
+                };
+
+                const response = await fetch("/expenses", {
+                    method: "POST",
+                    credentials: "same-origin",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json",
+                        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || "Error al crear la solicitud");
+                }
+
+                currentRequestId = data.data.id;
+                setRequestId(currentRequestId);
+            }
+
+            if (!keepOverlay) {
+                setLoadingMessage("Guardando líneas de gasto...");
+            }
+
+            for (const item of expenses) {
+                if (item.saved) {
+                    continue;
+                }
+
+                const formData = new FormData();
+
+                formData.append("expense_type", mapExpenseTypeToBackend(item.tipo));
+                formData.append("expense_date", item.fecha);
+                formData.append("description", item.motivo || "");
+                formData.append("is_card_payment", item.pagoTarjeta ? "1" : "0");
+
+                if (item.tipo === "OTROS") {
+                    formData.append("amount", item.importe);
+                } else {
+                    formData.append("quantity", item.cantidad);
+                }
+
+                if (item.archivo) {
+                    formData.append("ticket", item.archivo);
+                }
+
+                const itemResponse = await fetch(`/expenses/${currentRequestId}/items`, {
+                    method: "POST",
+                    credentials: "same-origin",
+                    headers: {
+                        "Accept": "application/json",
+                        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                    body: formData,
+                });
+
+                const itemData = await itemResponse.json();
+
+                if (!itemResponse.ok) {
+                    throw new Error(itemData.message || "Error al guardar una línea");
+                }
+            }
+
+            setExpenses((prev) =>
+                prev.map((item) => ({
+                    ...item,
+                    saved: true,
+                }))
+            );
+
+            return currentRequestId;
+        } finally {
+            setSaving(false);
+
+            if (!keepOverlay) {
+                setLoadingOverlay(false);
+            }
         }
-
-        for (const item of expenses) {
-            if (item.saved) {
-                continue;
-            }
-
-            const formData = new FormData();
-
-            formData.append("expense_type", mapExpenseTypeToBackend(item.tipo));
-            formData.append("expense_date", item.fecha);
-            formData.append("description", item.motivo || "");
-            formData.append("is_card_payment", item.pagoTarjeta ? "1" : "0");
-
-            if (item.tipo === "OTROS") {
-                formData.append("amount", item.importe);
-            } else {
-                formData.append("quantity", item.cantidad);
-            }
-
-            if (item.archivo) {
-                formData.append("ticket", item.archivo);
-            }
-
-            const itemResponse = await fetch(`/expenses/${currentRequestId}/items`, {
-                method: "POST",
-                credentials: "same-origin",
-                headers: {
-                    "Accept": "application/json",
-                    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
-                },
-                body: formData,
-            });
-
-            const itemData = await itemResponse.json();
-
-            if (!itemResponse.ok) {
-                throw new Error(itemData.message || "Error al guardar una línea");
-            }
-        }
-
-        setExpenses((prev) =>
-            prev.map((item) => ({
-                ...item,
-                saved: true,
-            }))
-        );
-
-        return currentRequestId;
     };
 
     return (
@@ -428,24 +459,25 @@ export default function ExpenseRequest({ pernr }) {
             </section>
 
             {/* DATOS */}
-            <section className="er-card">
-                <h2>Datos del solicitante</h2>
+            <section className="vr-card">
+                <div className="vr-card-header">
+                    <div>
+                        <h2>Datos del solicitante</h2>
+                        <p>Información principal del empleado y datos generales del trámite.</p>
+                    </div>
+                </div>
 
-                <div className="er-grid">
-                    <input value={form.solicitante} readOnly placeholder="Nombre"/>
-                    <input value={form.numeroEmpleado} readOnly placeholder="Número de empleado"/>
-    
-                    <input
-                        name="descripcion"
-                        value={form.descripcion}
-                        onChange={(e) =>
-                            setForm((prev) => ({
-                                ...prev,
-                                descripcion: e.target.value,
-                            }))
-                        }
-                        placeholder="Descripción"
-                    />
+                <div className="vr-grid vr-grid-2">
+                    <div className="vr-field">
+                        <label>Solicitante</label>
+                        <input type="text" name="solicitante" value={form.solicitante} readOnly />
+                    </div>
+
+                    <div className="vr-field">
+                        <label>Nº Empleado</label>
+                        <input type="text" name="numeroEmpleado" value={form.numeroEmpleado} readOnly />
+                    </div>
+
                 </div>
             </section>
 
@@ -712,7 +744,7 @@ export default function ExpenseRequest({ pernr }) {
                 <button
                     type="button"
                     className="primary"
-                    onClick={handleSaveRequest}
+                    onClick={handleSaveButton}
                     disabled={saving}
                 >
                     {saving ? "Guardando..." : "Guardar solicitud"}

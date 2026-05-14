@@ -523,3 +523,15 @@
     border-color: #c5a35d;
     box-shadow: 0 0 0 4px rgba(197, 163, 93, 0.14);
 }
+
+.er-readonly-input {
+    background-color: #f3f4f6 !important;
+    color: #9ca3af !important;
+    border-color: #d1d5db !important;
+    cursor: not-allowed;
+}
+
+.er-field input[readonly] {
+    background: #f8faf5;
+    color: #5f6b61;
+}

@@ -141,16 +141,16 @@
                             </p>
                         </div>
 
-                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#2f4a27] text-lg font-serif italic text-[#c5a35d]">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-lg font-serif italic
+                            {{ $procedure['type'] === 'absence'
+                                ? 'bg-[#f4ead7] text-[#2f4a27] ring-1 ring-[#eadfbe]'
+                                : 'bg-[#2f4a27] text-[#c5a35d]' }}">
                             {{ $procedure['type'] === 'absence' ? 'A' : 'G' }}
                         </div>
                     </div>
 
                     <div class="mt-6 space-y-3">
-                        <div class="flex items-center justify-between text-sm">
-                            <span class="text-gray-400">Firmante</span>
-                            <span class="font-semibold text-[#2f4a27]">{{ $procedure['signer'] ?? '-' }}</span>
-                        </div>
+
 
                         <div class="flex items-center justify-between text-sm">
                             <span class="text-gray-400">Año</span>

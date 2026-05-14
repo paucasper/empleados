@@ -4,12 +4,44 @@ namespace App\Http\Controllers;
 
 use App\Models\AbsenceRequest;
 use App\Models\HrRequest;
+use Illuminate\Support\Facades\Http;
 
 class DashboardController extends Controller
 {
     public function index()
     {
         $user = auth()->user();
+
+        $sapEmployee = null;
+
+        if (!empty($user->sap_employee_id)) {
+            try {
+                $baseUrl = rtrim(env('SAP_ADAPTER_URL'), '/');
+
+                $response = Http::timeout(10)
+                    ->get($baseUrl . '/api/employees/' . $user->sap_employee_id);
+
+                if ($response->successful()) {
+                    $sapEmployee = $response->json();
+
+                    $dashboardName = $user->name;
+
+                    if (!empty($sapEmployee['nombre'])) {
+                        $dashboardName = mb_convert_case(
+                            mb_strtolower($sapEmployee['nombre'], 'UTF-8'),
+                            MB_CASE_TITLE,
+                            'UTF-8'
+                        );
+                    }
+                }
+            } catch (\Throwable $e) {
+                \Log::error('Error consultando empleado SAP para dashboard', [
+                    'user_id' => $user->id,
+                    'sap_employee_id' => $user->sap_employee_id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
 
         // Stats reales
         $unsignedAbsences = AbsenceRequest::where('user_id', $user->id)
@@ -155,6 +187,8 @@ class DashboardController extends Controller
 
         return view('dashboard', compact(
             'user',
+            'sapEmployee',
+            'dashboardName',
             'stats',
             'myAbsences',
             'myExpenses',
@@ -183,27 +217,61 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
 
-        $absences = AbsenceRequest::with(['signer'])
-            ->where('user_id', $user->id)
-            ->latest()
-            ->get()
-            ->map(function ($absence) {
-                return [
-                    'id' => $absence->id,
-                    'type' => 'absence',
-                    'label' => 'Ausencia',
-                    'title' => $absence->description ?: $absence->awart,
-                    'status' => $absence->status,
-                    'date' => $absence->created_at,
-                    'year' => $absence->created_at->format('Y'),
-                    'from' => $absence->begda?->format('d/m/Y'),
-                    'to' => $absence->endda?->format('d/m/Y'),
-                ];
-            });
+        $absences = collect();
+
+        if (!empty($user->sap_employee_id)) {
+            $baseUrl = rtrim(env('SAP_ADAPTER_URL'), '/');
+
+            $yearsToLoad = [
+                now()->year,
+                now()->subYear()->year,
+            ];
+
+            foreach ($yearsToLoad as $year) {
+                try {
+                    $response = Http::timeout(15)
+                        ->get($baseUrl . '/api/employees/' . $user->sap_employee_id . '/calendar/' . $year);
+
+                    if (! $response->successful()) {
+                        continue;
+                    }
+
+                    $items = collect($response->json() ?? [])
+                        ->filter(function ($item) {
+                            return ($item['subtipo'] ?? null) !== '0000';
+                        })
+                        ->map(function ($item) {
+                            $fechaInicio = $item['fechaInicio'] ?? null;
+                            $fechaFin = $item['fechaFin'] ?? null;
+
+                            return [
+                                'id' => null,
+                                'type' => 'absence',
+                                'label' => 'Ausencia',
+                                'title' => $item['texto'] ?? 'Ausencia',
+                                'status' => 'Registrado en SAP',
+                                'date' => $fechaInicio ? \Carbon\Carbon::parse($fechaInicio) : now(),
+                                'year' => $fechaInicio ? \Carbon\Carbon::parse($fechaInicio)->format('Y') : now()->format('Y'),
+                                'from' => $fechaInicio ? \Carbon\Carbon::parse($fechaInicio)->format('d/m/Y') : null,
+                                'to' => $fechaFin ? \Carbon\Carbon::parse($fechaFin)->format('d/m/Y') : null,
+                            ];
+                        });
+
+                    $absences = $absences->concat($items);
+                } catch (\Throwable $e) {
+                    \Log::error('Error cargando ausencias SAP para Mis trámites', [
+                        'user_id' => $user->id,
+                        'sap_employee_id' => $user->sap_employee_id,
+                        'year' => $year,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
 
         $expenses = HrRequest::with(['status', 'approver', 'admin'])
-            ->where('user_id', $user->id)
             ->where('type', HrRequest::TYPE_EXPENSE)
+            ->where('sap_employee_id', $user->sap_employee_id)
             ->latest()
             ->get()
             ->map(function ($expense) {

@@ -30,7 +30,7 @@ class StoreExpenseItemRequest extends FormRequest
             'quantity' => ['nullable', 'numeric', 'min:0.01'],
             'amount' => ['nullable', 'numeric', 'min:0.01'],
             'is_card_payment' => ['nullable', 'boolean'],
-            'ticket' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
+            'ticket' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:10240'],   //Máximo para subida de tickets = 10 MB
         ];
     }
 
@@ -40,11 +40,20 @@ class StoreExpenseItemRequest extends FormRequest
             $type = $this->input('expense_type');
 
             if ($type === 'otros_gastos' && !$this->filled('amount')) {
-                $validator->errors()->add('amount', 'El importe es obligatorio para "Otros gastos".');
+                $validator->errors()->add(
+                    'amount',
+                    'El importe es obligatorio para "Otros gastos".'
+                );
             }
 
-            if ($type !== 'otros_gastos' && !$this->filled('quantity')) {
-                $validator->errors()->add('quantity', 'La cantidad es obligatoria para este tipo de gasto.');
+            if (
+                $type === 'kilometraje' &&
+                !$this->filled('quantity')
+            ) {
+                $validator->errors()->add(
+                    'quantity',
+                    'La cantidad es obligatoria para kilometraje.'
+                );
             }
         });
     }
